@@ -13,6 +13,13 @@ program
   .description("Terminal interface to Perplexity chat models")
   .version(version)
   .argument("[question]", "Ask a question and exit")
-  .action((question?: string) => (question ? runQuery(question) : runChat()));
+  .option("--follow-up <id>", "Follow up on a saved conversation")
+  .action((question?: string, opts?: { followUp?: string }) => {
+    if (opts?.followUp && !question) {
+      console.error("--follow-up requires a question argument.");
+      process.exit(1);
+    }
+    return question ? runQuery(question, opts?.followUp) : runChat();
+  });
 
 program.parse();
