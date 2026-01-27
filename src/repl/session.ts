@@ -18,8 +18,9 @@ type SessionDeps = {
 const LIST_MAX_ITEMS = 20;
 
 const HELP_TEXT = `Available commands:
-  /help   Show this help message
-  /list   List saved conversations`;
+  /help         Show this help message
+  /list         List saved conversations
+  /resume <id>  Resume a saved conversation`;
 
 export async function startSession(deps: SessionDeps): Promise<void> {
   const { client, store, renderer } = deps;
@@ -73,8 +74,11 @@ export async function startSession(deps: SessionDeps): Promise<void> {
     }
   }
 
-  function handleSlashCommand(command: string): boolean {
-    switch (command.trim()) {
+  function handleSlashCommand(input: string): boolean {
+    const trimmed = input.trim();
+    const [command, ...args] = trimmed.split(/\s+/);
+
+    switch (command) {
       case "/help":
         renderer.info(HELP_TEXT);
         rl.prompt();
@@ -82,11 +86,42 @@ export async function startSession(deps: SessionDeps): Promise<void> {
       case "/list":
         handleList();
         return true;
+      case "/resume":
+        handleResume(args[0]);
+        return true;
       default:
-        renderer.error(`Unknown command: ${command.trim()}`);
+        renderer.error(`Unknown command: ${command}`);
         rl.prompt();
         return true;
     }
+  }
+
+  function replayMessages(conv: Conversation): void {
+    for (const msg of conv.messages) {
+      if (msg.role === "user") {
+        console.log(`${PROMPT}${msg.content}`);
+      } else {
+        renderer.assistantToken(msg.content);
+        renderer.assistantEnd();
+      }
+    }
+  }
+
+  async function handleResume(id: string | undefined): Promise<void> {
+    if (!id) {
+      renderer.error("Usage: /resume <id>");
+      rl.prompt();
+      return;
+    }
+
+    try {
+      conversation = await store.load(id);
+      console.log();
+      replayMessages(conversation);
+    } catch {
+      renderer.error(`Conversation not found: ${id}`);
+    }
+    rl.prompt();
   }
 
   async function handleList(): Promise<void> {
@@ -110,7 +145,7 @@ export async function startSession(deps: SessionDeps): Promise<void> {
         return `${s.id.padEnd(idWidth)}  ${s.title.padEnd(titleWidth)}  ${date}`;
       });
 
-      renderer.info([header, separator, ...rows].join("\n"));
+      renderer.info(["", header, separator, ...rows, ""].join("\n"));
     } catch {
       renderer.error("Failed to list conversations.");
     }
@@ -153,16 +188,8 @@ export async function startSession(deps: SessionDeps): Promise<void> {
     renderer.info("\nGoodbye!");
   });
 
-  // Replay existing messages if resuming
   if (conversation && conversation.messages.length > 0) {
-    for (const msg of conversation.messages) {
-      if (msg.role === "user") {
-        renderer.userMessage(msg.content);
-      } else {
-        renderer.assistantToken(msg.content);
-        renderer.assistantEnd();
-      }
-    }
+    replayMessages(conversation);
   }
 
   rl.prompt();
