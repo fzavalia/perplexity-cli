@@ -20,7 +20,8 @@ const LIST_MAX_ITEMS = 20;
 const HELP_TEXT = `Available commands:
   /help         Show this help message
   /list         List saved conversations
-  /resume <id>  Resume a saved conversation`;
+  /resume <id>  Resume a saved conversation
+  /clear        Start a new conversation`;
 
 export function startSession(deps: SessionDeps): Promise<void> {
   const { client, store, renderer } = deps;
@@ -102,6 +103,11 @@ export function startSession(deps: SessionDeps): Promise<void> {
             renderer.error(String(e));
             showPrompt();
           });
+          return;
+        case "/clear":
+          conversation = null;
+          renderer.info("Started new conversation.");
+          showPrompt();
           return;
         default:
           renderer.error(`Unknown command: ${command}`);
