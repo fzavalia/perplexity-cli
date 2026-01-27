@@ -203,6 +203,6 @@ export function startSession(deps: SessionDeps): Promise<void> {
       replayMessages(conversation);
     }
 
-    showPrompt();
+    rl.prompt();
   });
 }
