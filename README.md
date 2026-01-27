@@ -8,7 +8,7 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 - Source citations displayed after each response
 - Conversation history saved locally
 - Multi-line paste support
-- Slash commands: `/help`, `/list`, `/retry`, `/exit`
+- Slash commands: `/help`, `/list`
 
 ## Requirements
 
@@ -51,10 +51,8 @@ perplexity
 |----------|------------------------------|
 | `/help`  | Show available commands      |
 | `/list`  | List saved conversations     |
-| `/retry` | Resend the last user message |
-| `/exit`  | Exit the session             |
 
-You can also press `Ctrl+D` to exit.
+Use `Ctrl+D` to exit.
 
 ## Project structure
 

@@ -19,9 +19,7 @@ const LIST_MAX_ITEMS = 20;
 
 const HELP_TEXT = `Available commands:
   /help   Show this help message
-  /list   List saved conversations
-  /retry  Resend the last user message
-  /exit   Exit the session`;
+  /list   List saved conversations`;
 
 export async function startSession(deps: SessionDeps): Promise<void> {
   const { client, store, renderer } = deps;
@@ -77,18 +75,12 @@ export async function startSession(deps: SessionDeps): Promise<void> {
 
   function handleSlashCommand(command: string): boolean {
     switch (command.trim()) {
-      case "/exit":
-        rl.close();
-        return true;
       case "/help":
         renderer.info(HELP_TEXT);
         rl.prompt();
         return true;
       case "/list":
         handleList();
-        return true;
-      case "/retry":
-        handleRetry();
         return true;
       default:
         renderer.error(`Unknown command: ${command.trim()}`);
@@ -123,30 +115,6 @@ export async function startSession(deps: SessionDeps): Promise<void> {
       renderer.error("Failed to list conversations.");
     }
     rl.prompt();
-  }
-
-  function handleRetry(): void {
-    if (!conversation || conversation.messages.length === 0) {
-      renderer.error("No message to retry.");
-      rl.prompt();
-      return;
-    }
-
-    const lastUserMessage = [...conversation.messages]
-      .reverse()
-      .find((m) => m.role === "user");
-
-    if (!lastUserMessage) {
-      renderer.error("No user message to retry.");
-      rl.prompt();
-      return;
-    }
-
-    // Remove messages from the last user message onward
-    const lastUserIndex = conversation.messages.lastIndexOf(lastUserMessage);
-    conversation.messages = conversation.messages.slice(0, lastUserIndex);
-
-    sendMessage(lastUserMessage.content);
   }
 
   // Multi-line paste handling via debounce
