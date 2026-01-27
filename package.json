@@ -14,7 +14,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@inquirer/select": "^4.2.0",
     "@perplexity-ai/perplexity_ai": "^0.22.0",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",

@@ -4,7 +4,6 @@ import type { SearchResult } from "../api/perplexity.js";
 export type IndexedSource = SearchResult & { index: number };
 
 export type Renderer = {
-  userMessage(content: string): void;
   assistantToken(token: string): void;
   assistantEnd(): void;
   sources(results: IndexedSource[]): void;
@@ -24,11 +23,6 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
   let isFirstToken = true;
 
   return {
-    userMessage(content: string) {
-      const prefix = useColor ? chalk.dim("U: ") : "";
-      console.log(`${prefix}${content}`);
-    },
-
     assistantToken(token: string) {
       if (isFirstToken) {
         process.stdout.write("\n");

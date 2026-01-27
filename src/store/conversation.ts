@@ -38,13 +38,14 @@ export function createConversationStore(
     try {
       const data = await readFile(indexPath(), "utf-8");
       return JSON.parse(data) as ConversationSummary[];
-    } catch {
-      return [];
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
     }
   }
 
   async function writeIndex(summaries: ConversationSummary[]): Promise<void> {
-    const sorted = summaries.sort(
+    const sorted = [...summaries].sort(
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
@@ -79,9 +80,9 @@ export function createConversationStore(
     async ensureDirectory() {
       await mkdir(basePath, { recursive: true });
       try {
-        await readFile(indexPath(), "utf-8");
+        await writeFile(indexPath(), "[]", { flag: "wx" });
       } catch {
-        await writeFile(indexPath(), "[]");
+        // index already exists — ignore
       }
     },
 
