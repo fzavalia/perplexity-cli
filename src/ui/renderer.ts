@@ -1,11 +1,12 @@
 import chalk from "chalk";
 import type { SearchResult } from "../api/perplexity.js";
+import type { MarkdownRenderer } from "./markdown.js";
 
 export type IndexedSource = SearchResult & { index: number };
 
 export type Renderer = {
   assistantToken(token: string): void;
-  assistantEnd(): void;
+  assistantEnd(fullResponse: string): void;
   sources(results: IndexedSource[]): void;
   error(message: string): void;
   info(message: string): void;
@@ -14,13 +15,26 @@ export type Renderer = {
 type RendererOptions = {
   isTTY?: boolean;
   noColor?: boolean;
+  markdown?: MarkdownRenderer;
 };
 
 export function createRenderer(options: RendererOptions = {}): Renderer {
   const isTTY = options.isTTY ?? process.stdout.isTTY ?? false;
   const noColor = options.noColor ?? !!process.env["NO_COLOR"];
   const useColor = isTTY && !noColor;
+  const markdown = options.markdown;
   let isFirstToken = true;
+  let rawBuffer = "";
+
+  function countTerminalRows(text: string): number {
+    const columns = process.stdout.columns || 80;
+    const lines = text.split("\n");
+    let rows = 0;
+    for (const line of lines) {
+      rows += Math.max(1, Math.ceil(line.length / columns));
+    }
+    return rows;
+  }
 
   return {
     assistantToken(token: string) {
@@ -29,11 +43,20 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
         isFirstToken = false;
       }
       process.stdout.write(token);
+      rawBuffer += token;
     },
 
-    assistantEnd() {
-      process.stdout.write("\n");
+    assistantEnd(fullResponse: string) {
+      if (isTTY && useColor && markdown && fullResponse) {
+        const contentRows = countTerminalRows(rawBuffer);
+        const totalRows = contentRows + 1; // +1 for the leading blank line
+        process.stdout.write(`\x1b[${totalRows}A\x1b[1G\x1b[0J`);
+        process.stdout.write("\n" + markdown.render(fullResponse) + "\n");
+      } else {
+        process.stdout.write("\n");
+      }
       isFirstToken = true;
+      rawBuffer = "";
     },
 
     sources(results: IndexedSource[]) {

@@ -5,6 +5,7 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 ## Features
 
 - Streaming responses from Perplexity's `sonar-pro` model
+- Markdown-formatted responses (headers, bold, code blocks, lists)
 - Source citations displayed after each response
 - Conversation history saved locally
 - Multi-line paste support
@@ -71,6 +72,7 @@ src/
   repl/
     session.ts          Interactive readline session + slash commands
   ui/
+    markdown.ts         Markdown-to-terminal rendering (marked + marked-terminal)
     renderer.ts         Streaming output + source citation display
 ```
 

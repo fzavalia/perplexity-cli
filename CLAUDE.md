@@ -23,7 +23,9 @@ src/
     session.ts       → startSession(deps): readline loop, multi-line paste (10ms debounce),
                        slash commands (/help, /list, /resume, /clear), deferred conversation creation
   ui/
-    renderer.ts      → createRenderer(): streaming token output, TTY/NO_COLOR aware
+    markdown.ts      → createMarkdownRenderer(): marked + marked-terminal for terminal formatting
+    renderer.ts      → createRenderer(): streaming token output, TTY/NO_COLOR aware,
+                       clears raw text and re-renders formatted markdown on assistantEnd()
 ```
 
 Data lives in `~/.perplexity-cli/conversations/` — each conversation as `<id>.json` with an `index.json` for fast listing.
@@ -39,7 +41,7 @@ Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 
 ## Tech stack
 
-TypeScript (ES2020, ESM), Node.js >=18, commander, openai SDK, chalk v5, nanoid v5.
+TypeScript (ES2020, ESM), Node.js >=18, commander, openai SDK, chalk v5, nanoid v5, marked + marked-terminal.
 
 ## Key patterns
 
