@@ -15,8 +15,11 @@ type SessionDeps = {
   conversation: Conversation | null;
 };
 
+const LIST_MAX_ITEMS = 20;
+
 const HELP_TEXT = `Available commands:
   /help   Show this help message
+  /list   List saved conversations
   /retry  Resend the last user message
   /exit   Exit the session`;
 
@@ -81,6 +84,9 @@ export async function startSession(deps: SessionDeps): Promise<void> {
         renderer.info(HELP_TEXT);
         rl.prompt();
         return true;
+      case "/list":
+        handleList();
+        return true;
       case "/retry":
         handleRetry();
         return true;
@@ -89,6 +95,34 @@ export async function startSession(deps: SessionDeps): Promise<void> {
         rl.prompt();
         return true;
     }
+  }
+
+  async function handleList(): Promise<void> {
+    try {
+      const summaries = await store.listSummaries();
+
+      if (summaries.length === 0) {
+        renderer.info("No conversations yet.");
+        rl.prompt();
+        return;
+      }
+
+      const displayed = summaries.slice(0, LIST_MAX_ITEMS);
+      const idWidth = Math.max(...displayed.map((s) => s.id.length), 2);
+      const titleWidth = Math.max(...displayed.map((s) => s.title.length), 5);
+
+      const header = `${"ID".padEnd(idWidth)}  ${"Title".padEnd(titleWidth)}  Last Updated`;
+      const separator = "-".repeat(header.length);
+      const rows = displayed.map((s) => {
+        const date = new Date(s.updatedAt).toLocaleString();
+        return `${s.id.padEnd(idWidth)}  ${s.title.padEnd(titleWidth)}  ${date}`;
+      });
+
+      renderer.info([header, separator, ...rows].join("\n"));
+    } catch {
+      renderer.error("Failed to list conversations.");
+    }
+    rl.prompt();
   }
 
   function handleRetry(): void {

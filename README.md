@@ -8,7 +8,7 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 - Source citations displayed after each response
 - Conversation history saved locally
 - Multi-line paste support
-- Slash commands: `/help`, `/retry`, `/exit`
+- Slash commands: `/help`, `/list`, `/retry`, `/exit`
 
 ## Requirements
 
@@ -38,19 +38,11 @@ Start a conversation:
 npm start
 ```
 
-List saved conversations:
-
-```bash
-npm start -- list
-npm start -- list --limit 5
-```
-
 ### Global install
 
 ```bash
 npm link
 perplexity
-perplexity list
 ```
 
 ### Slash commands
@@ -58,6 +50,7 @@ perplexity list
 | Command  | Description                  |
 |----------|------------------------------|
 | `/help`  | Show available commands      |
+| `/list`  | List saved conversations     |
 | `/retry` | Resend the last user message |
 | `/exit`  | Exit the session             |
 
@@ -71,13 +64,12 @@ src/
   types.ts              Shared type definitions
   commands/
     chat.ts             Chat command (default)
-    list.ts             List saved conversations
   api/
     perplexity.ts       Perplexity SDK client + error handling
   store/
     conversation.ts     Conversation persistence (~/.perplexity-cli/)
   repl/
-    session.ts          Interactive readline session
+    session.ts          Interactive readline session + slash commands
   ui/
     renderer.ts         Streaming output + source citation display
 ```
