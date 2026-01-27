@@ -54,8 +54,9 @@ perplexity
 | `/list`        | List saved conversations        |
 | `/resume <id>` | Resume a saved conversation     |
 | `/clear`       | Start a new conversation        |
+| `/exit`        | Exit the application            |
 
-Use `Ctrl+D` to exit.
+Use `/exit` or `Ctrl+D` to exit.
 
 ## Project structure
 

@@ -21,7 +21,8 @@ const HELP_TEXT = `Available commands:
   /help         Show this help message
   /list         List saved conversations
   /resume <id>  Resume a saved conversation
-  /clear        Start a new conversation`;
+  /clear        Start a new conversation
+  /exit         Exit the application`;
 
 export function startSession(deps: SessionDeps): Promise<void> {
   const { client, store, renderer } = deps;
@@ -108,6 +109,9 @@ export function startSession(deps: SessionDeps): Promise<void> {
           conversation = null;
           renderer.info("Started new conversation.");
           showPrompt();
+          return;
+        case "/exit":
+          rl.close();
           return;
         default:
           renderer.error(`Unknown command: ${command}`);
