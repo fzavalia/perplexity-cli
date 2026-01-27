@@ -1,11 +1,13 @@
 import chalk from "chalk";
 import type { SearchResult } from "../api/perplexity.js";
 
+export type IndexedSource = SearchResult & { index: number };
+
 export type Renderer = {
   userMessage(content: string): void;
   assistantToken(token: string): void;
   assistantEnd(): void;
-  sources(results: SearchResult[]): void;
+  sources(results: IndexedSource[]): void;
   error(message: string): void;
   info(message: string): void;
 };
@@ -40,12 +42,12 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
       isFirstToken = true;
     },
 
-    sources(results: SearchResult[]) {
+    sources(results: IndexedSource[]) {
       console.log("");
-      for (let i = 0; i < results.length; i++) {
+      for (const source of results) {
         const label = useColor
-          ? chalk.dim(`[${i + 1}] `) + chalk.underline(results[i].url)
-          : `[${i + 1}] ${results[i].url}`;
+          ? chalk.dim(`[${source.index}] `) + chalk.underline(source.url)
+          : `[${source.index}] ${source.url}`;
         console.log(label);
       }
     },

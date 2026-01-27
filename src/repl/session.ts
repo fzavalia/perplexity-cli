@@ -59,8 +59,11 @@ export async function startSession(deps: SessionDeps): Promise<void> {
       }
 
       renderer.assistantEnd();
-      if (sources.length > 0) {
-        renderer.sources(sources);
+      const citedSources = sources
+        .map((s, i) => ({ ...s, index: i + 1 }))
+        .filter((s) => fullResponse.includes(`[${s.index}]`));
+      if (citedSources.length > 0) {
+        renderer.sources(citedSources);
       }
       store.addMessage(conv, "assistant", fullResponse);
       await store.save(conv);
