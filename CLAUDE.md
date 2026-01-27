@@ -10,25 +10,44 @@ Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models. 
 
 ```
 src/
-  index.ts           → CLI entry, commander setup, command routing
+  index.ts           → CLI entry (shebang), commander setup, default → chat, `list` subcommand
+  types.ts           → shared types: Message, Conversation, ConversationSummary
   commands/
-    chat.ts          → interactive REPL entry
-    list.ts          → list conversations
+    chat.ts          → runChat(): validates PERPLEXITY_API_KEY, wires deps, starts session
+    list.ts          → runList(): prints conversation table with --limit support
   api/
-    perplexity.ts    → OpenAI SDK wrapper (baseURL: api.perplexity.ai)
+    perplexity.ts    → createPerplexityClient(apiKey): streamChat async generator via OpenAI SDK
+                       classifyApiError(): maps errors to user-friendly messages
   store/
-    conversation.ts  → CRUD for conversation JSON files + index
+    conversation.ts  → createConversationStore(): CRUD for conversation JSON files + index.json
   repl/
-    session.ts       → readline loop, slash command dispatch (/exit, /help, /retry)
+    session.ts       → startSession(deps): readline loop, multi-line paste (10ms debounce),
+                       slash commands (/exit, /help, /retry), deferred conversation creation
   ui/
-    renderer.ts      → streaming output, TTY-aware formatting (chalk)
+    renderer.ts      → createRenderer(): streaming token output, TTY/NO_COLOR aware
 ```
 
-Data lives in `~/.perplexity-cli/` — conversations as `<id>.json` files with an `index.json` for fast listing.
+Data lives in `~/.perplexity-cli/conversations/` — each conversation as `<id>.json` with an `index.json` for fast listing.
+
+## Build & run
+
+- `npm run build` — compile TypeScript to `dist/`
+- `npm run dev` — watch mode
+- `npm start` — run `dist/index.js`
+- `npm test` / `npm run test:watch` — vitest
+
+Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 
 ## Tech stack
 
-TypeScript (ES2020), Node.js >=18, commander, openai SDK, chalk, inquirer, nanoid.
+TypeScript (ES2020, ESM), Node.js >=18, commander, openai SDK, chalk v5, nanoid v5.
+
+## Key patterns
+
+- Factory functions (`createX`) returning typed objects — no classes
+- Async generators for streaming API responses
+- Deferred conversation creation (conversation starts as `null`, created on first user message)
+- Multi-line paste via readline line-buffering with 10ms debounce
 
 ## Conventions
 
