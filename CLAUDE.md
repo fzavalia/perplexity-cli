@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models.
+Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models. See `README.md` for setup, usage, and project overview.
 
 ## Architecture
 
@@ -52,6 +52,7 @@ TypeScript (ES2020, ESM), Node.js >=18, commander, openai SDK, chalk v5, nanoid 
 ## Conventions
 
 - Conventional Commits: `<type>(scope): <description>` (feat, fix, docs, refactor, etc.)
+- Before committing: if a feature was added, changed, or removed, update `README.md` and `CLAUDE.md` to reflect the change
 - Small single-responsibility functions, descriptive names, no magic numbers
 - Prefer self-documenting code over comments
 - Dependency injection, Law of Demeter
