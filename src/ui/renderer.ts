@@ -51,7 +51,9 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
         const contentRows = countTerminalRows(rawBuffer);
         const totalRows = contentRows + 1; // +1 for the leading blank line
         process.stdout.write(`\x1b[${totalRows}A\x1b[1G\x1b[0J`);
-        process.stdout.write("\n" + markdown.render(fullResponse) + "\n");
+        const rendered = markdown.render(fullResponse);
+        const styled = rendered.replace(/\[(\d+)\]/g, (m) => chalk.dim(m));
+        process.stdout.write("\n" + styled + "\n");
       } else {
         process.stdout.write("\n");
       }
