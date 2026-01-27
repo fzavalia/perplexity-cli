@@ -6,7 +6,7 @@ import type { ConversationStore } from "../store/conversation.js";
 import { classifyApiError } from "../api/perplexity.js";
 
 const PASTE_DEBOUNCE_MS = 10;
-const PROMPT = "> ";
+const PROMPT = "❯ ";
 
 type SessionDeps = {
   client: PerplexityClient;
