@@ -23,17 +23,14 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
   const noColor = options.noColor ?? !!process.env["NO_COLOR"];
   const useColor = isTTY && !noColor;
   const markdown = options.markdown;
+  const useMarkdown = isTTY && useColor && !!markdown;
   let isFirstToken = true;
-  let rawBuffer = "";
+  let tokenCount = 0;
 
-  function countTerminalRows(text: string): number {
-    const columns = process.stdout.columns || 80;
-    const lines = text.split("\n");
-    let rows = 0;
-    for (const line of lines) {
-      rows += Math.max(1, Math.ceil(line.length / columns));
-    }
-    return rows;
+  function writeIndicator(): void {
+    process.stdout.write(
+      `\x1b[1G\x1b[2K${chalk.dim(`Thinking (${tokenCount})`)}`
+    );
   }
 
   return {
@@ -42,30 +39,36 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
         process.stdout.write("\n");
         isFirstToken = false;
       }
-      process.stdout.write(token);
-      rawBuffer += token;
+      if (useMarkdown) {
+        tokenCount++;
+        writeIndicator();
+      } else {
+        process.stdout.write(token);
+      }
     },
 
     assistantEnd(fullResponse: string) {
-      if (isTTY && useColor && markdown && fullResponse) {
-        const contentRows = countTerminalRows(rawBuffer);
-        const totalRows = contentRows + 1; // +1 for the leading blank line
-        process.stdout.write(`\x1b[${totalRows}A\x1b[1G\x1b[0J`);
-        const rendered = markdown.render(fullResponse);
-        const styled = rendered.replace(/\[(\d+)\]/g, (m) => chalk.dim(m));
-        process.stdout.write("\n" + styled + "\n");
+      if (useMarkdown && !isFirstToken) {
+        process.stdout.write(`\x1b[1A\x1b[1G\x1b[0J`);
+        if (fullResponse) {
+          const rendered = markdown!.render(fullResponse);
+          const styled = rendered.replace(/\[(\d+)\]/g, (m) => chalk.dim(m));
+          process.stdout.write("\n" + styled + "\n");
+        } else {
+          process.stdout.write("\n");
+        }
       } else {
         process.stdout.write("\n");
       }
       isFirstToken = true;
-      rawBuffer = "";
+      tokenCount = 0;
     },
 
     sources(results: IndexedSource[]) {
       console.log("");
       for (const source of results) {
         const label = useColor
-          ? chalk.dim(`[${source.index}] `) + chalk.underline(source.url)
+          ? chalk.dim(`[${source.index}] `) + chalk.blue.underline(source.url)
           : `[${source.index}] ${source.url}`;
         console.log(label);
       }
