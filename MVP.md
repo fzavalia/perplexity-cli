@@ -12,7 +12,7 @@ The **Perplexity CLI** is a terminal-first interface to Perplexity's chat models
 
 - Uses the Perplexity chat completions endpoint (OpenAI-compatible).
 - Base URL: `https://api.perplexity.ai`.
-- Auth: `Authorization: Bearer <PPLX_API_KEY>` header.
+- Auth: `Authorization: Bearer <PERPLEXITY_API_KEY>` header.
 - Request: `{ model, messages, stream: true }`.
 - Default model: `sonar-pro`.
 
@@ -22,8 +22,8 @@ The **Perplexity CLI** is a terminal-first interface to Perplexity's chat models
 
 ### 1. Authentication
 
-- Read API key from `PPLX_API_KEY` environment variable only.
-- Clear error when no key is found: _"No API key configured. Set the PPLX_API_KEY environment variable."_
+- Read API key from `PERPLEXITY_API_KEY` environment variable only.
+- Clear error when no key is found: _"No API key configured. Set the PERPLEXITY_API_KEY environment variable."_
 
 ### 2. Interactive REPL
 
@@ -144,7 +144,7 @@ src/
 
 The MVP is complete when:
 
-1. Setting `PPLX_API_KEY` env var authenticates all commands.
+1. Setting `PERPLEXITY_API_KEY` env var authenticates all commands.
 2. `perplexity` opens an interactive REPL with multi-turn context.
 3. Conversations persist across sessions and can be listed and resumed.
 4. Errors (no key, network, API) are handled gracefully with clear messages.
