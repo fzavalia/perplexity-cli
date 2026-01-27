@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models. See `MVP.md` for full spec.
+Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models.
 
 ## Architecture
 
