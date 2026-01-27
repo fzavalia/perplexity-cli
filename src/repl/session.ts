@@ -166,8 +166,8 @@ export function startSession(deps: SessionDeps): Promise<void> {
         });
 
         renderer.info(["", header, separator, ...rows, ""].join("\n"));
-      } catch {
-        renderer.error("Failed to list conversations.");
+      } catch (error) {
+        renderer.error(`Failed to list conversations: ${error}`);
       }
       showPrompt();
     }

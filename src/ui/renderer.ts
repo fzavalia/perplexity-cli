@@ -36,7 +36,9 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
   return {
     assistantToken(token: string) {
       if (isFirstToken) {
-        process.stdout.write("\n");
+        if (!useMarkdown) {
+          process.stdout.write("\n");
+        }
         isFirstToken = false;
       }
       if (useMarkdown) {

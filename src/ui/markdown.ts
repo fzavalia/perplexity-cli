@@ -6,14 +6,13 @@ export type MarkdownRenderer = {
 };
 
 export function createMarkdownRenderer(): MarkdownRenderer {
-  const terminalColumns = process.stdout.columns || 80;
-
-  const marked = new Marked();
-  marked.use(markedTerminal({ width: terminalColumns, tab: 2 }) as object);
-
   return {
     render(markdown: string): string {
-      const result = marked.parse(markdown) as string;
+      const width = process.stdout.columns || 80;
+      const marked = new Marked();
+      // Cast needed: @types/marked-terminal doesn't match marked's extension type
+      marked.use(markedTerminal({ width, tab: 2 }) as object);
+      const result = marked.parse(markdown, { async: false });
       return result.trimEnd();
     },
   };
