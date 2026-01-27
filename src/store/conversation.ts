@@ -82,7 +82,9 @@ export function createConversationStore(
   }
 
   function withIndexLock<T>(fn: () => Promise<T>): Promise<T> {
+    // Run fn after previous op completes (regardless of success/failure)
     const next = indexLock.then(fn, fn);
+    // Keep chain always-resolving so future ops are never blocked by past failures
     indexLock = next.then(() => {}, () => {});
     return next;
   }

@@ -41,7 +41,7 @@ Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 
 ## Tech stack
 
-TypeScript (ES2020, ESM), Node.js >=18, commander, openai SDK, chalk v5, nanoid v5, marked + marked-terminal.
+TypeScript (ES2020, ESM), Node.js >=18, commander, @perplexity-ai/perplexity_ai SDK, chalk v5, nanoid v5, marked + marked-terminal.
 
 ## Key patterns
 

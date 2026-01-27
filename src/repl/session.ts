@@ -126,8 +126,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
         if (msg.role === "user") {
           console.log(`${PROMPT}${msg.content}`);
         } else {
-          renderer.assistantToken(msg.content);
-          renderer.assistantEnd(msg.content);
+          renderer.assistantComplete(msg.content);
         }
       }
     }

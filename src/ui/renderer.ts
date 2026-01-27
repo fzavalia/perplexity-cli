@@ -7,6 +7,7 @@ export type IndexedSource = SearchResult & { index: number };
 export type Renderer = {
   assistantToken(token: string): void;
   assistantEnd(fullResponse: string): void;
+  assistantComplete(content: string): void;
   sources(results: IndexedSource[]): void;
   error(message: string): void;
   info(message: string): void;
@@ -64,6 +65,16 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
       }
       isFirstToken = true;
       tokenCount = 0;
+    },
+
+    assistantComplete(content: string) {
+      if (useMarkdown && content) {
+        const rendered = markdown!.render(content);
+        const styled = rendered.replace(/\[(\d+)\]/g, (m) => chalk.dim(m));
+        process.stdout.write(styled + "\n");
+      } else {
+        process.stdout.write(content + "\n");
+      }
     },
 
     sources(results: IndexedSource[]) {
