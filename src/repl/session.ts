@@ -45,12 +45,12 @@ export function startSession(deps: SessionDeps): Promise<void> {
     }
 
     async function sendMessage(content: string): Promise<void> {
-      const conv = await ensureConversation(content);
-
-      store.addMessage(conv, "user", content);
-      await store.save(conv);
-
       try {
+        const conv = await ensureConversation(content);
+
+        store.addMessage(conv, "user", content);
+        await store.save(conv);
+
         rl.pause();
         let fullResponse = "";
         let sources: SearchResult[] = [];
@@ -92,10 +92,16 @@ export function startSession(deps: SessionDeps): Promise<void> {
           showPrompt();
           return;
         case "/list":
-          handleList().catch((e) => renderer.error(String(e)));
+          handleList().catch((e) => {
+            renderer.error(String(e));
+            showPrompt();
+          });
           return;
         case "/resume":
-          handleResume(args[0]).catch((e) => renderer.error(String(e)));
+          handleResume(args[0]).catch((e) => {
+            renderer.error(String(e));
+            showPrompt();
+          });
           return;
         default:
           renderer.error(`Unknown command: ${command}`);
@@ -176,7 +182,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
 
       console.log();
 
-      if (content.startsWith("/")) {
+      if (content.startsWith("/") && !content.includes("\n")) {
         handleSlashCommand(content);
         return;
       }
@@ -195,6 +201,10 @@ export function startSession(deps: SessionDeps): Promise<void> {
     });
 
     rl.on("close", () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
       renderer.info("\n\nGoodbye!");
       resolve();
     });

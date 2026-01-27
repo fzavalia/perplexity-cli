@@ -56,6 +56,10 @@ export function createPerplexityClient(apiKey: string): PerplexityClient {
 }
 
 export function classifyApiError(error: unknown): string {
+  if (error instanceof Perplexity.APIConnectionError) {
+    return "Could not reach api.perplexity.ai. Check your connection.";
+  }
+
   if (error instanceof Perplexity.APIError) {
     switch (error.status) {
       case 401:
@@ -71,10 +75,6 @@ export function classifyApiError(error: unknown): string {
         }
         return `API error (${error.status}): ${error.message}`;
     }
-  }
-
-  if (error instanceof Perplexity.APIConnectionError) {
-    return "Could not reach api.perplexity.ai. Check your connection.";
   }
 
   if (error instanceof Error) {

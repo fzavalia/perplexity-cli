@@ -7,6 +7,7 @@ import type { Conversation, ConversationSummary, Message } from "../types.js";
 const DEFAULT_BASE_PATH = join(homedir(), ".perplexity-cli", "conversations");
 const INDEX_FILE = "index.json";
 const TITLE_MAX_LENGTH = 60;
+const INVALID_ID_PATTERN = /[/\\]|\.\./;
 
 export type ConversationStore = {
   ensureDirectory(): Promise<void>;
@@ -23,9 +24,31 @@ export type ConversationStore = {
   getLastUpdated(): Promise<ConversationSummary | null>;
 };
 
+function validateConversation(data: unknown): Conversation {
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    typeof (data as Record<string, unknown>).id !== "string" ||
+    typeof (data as Record<string, unknown>).title !== "string" ||
+    !Array.isArray((data as Record<string, unknown>).messages)
+  ) {
+    throw new Error("Corrupted conversation file: invalid JSON shape");
+  }
+  return data as Conversation;
+}
+
+function validateIndex(data: unknown): ConversationSummary[] {
+  if (!Array.isArray(data)) {
+    throw new Error("Corrupted index file: expected an array");
+  }
+  return data as ConversationSummary[];
+}
+
 export function createConversationStore(
   basePath: string = DEFAULT_BASE_PATH
 ): ConversationStore {
+  let indexLock: Promise<void> = Promise.resolve();
+
   function indexPath(): string {
     return join(basePath, INDEX_FILE);
   }
@@ -34,10 +57,16 @@ export function createConversationStore(
     return join(basePath, `${id}.json`);
   }
 
+  function validateId(id: string): void {
+    if (INVALID_ID_PATTERN.test(id)) {
+      throw new Error(`Invalid conversation id: ${id}`);
+    }
+  }
+
   async function readIndex(): Promise<ConversationSummary[]> {
     try {
       const data = await readFile(indexPath(), "utf-8");
-      return JSON.parse(data) as ConversationSummary[];
+      return validateIndex(JSON.parse(data));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
       throw error;
@@ -52,23 +81,31 @@ export function createConversationStore(
     await writeFile(indexPath(), JSON.stringify(sorted, null, 2));
   }
 
+  function withIndexLock<T>(fn: () => Promise<T>): Promise<T> {
+    const next = indexLock.then(fn, fn);
+    indexLock = next.then(() => {}, () => {});
+    return next;
+  }
+
   async function updateIndex(conversation: Conversation): Promise<void> {
-    const summaries = await readIndex();
-    const existing = summaries.findIndex((s) => s.id === conversation.id);
-    const summary: ConversationSummary = {
-      id: conversation.id,
-      title: conversation.title,
-      createdAt: conversation.createdAt,
-      updatedAt: conversation.updatedAt,
-    };
+    await withIndexLock(async () => {
+      const summaries = await readIndex();
+      const existing = summaries.findIndex((s) => s.id === conversation.id);
+      const summary: ConversationSummary = {
+        id: conversation.id,
+        title: conversation.title,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt,
+      };
 
-    if (existing >= 0) {
-      summaries[existing] = summary;
-    } else {
-      summaries.push(summary);
-    }
+      if (existing >= 0) {
+        summaries[existing] = summary;
+      } else {
+        summaries.push(summary);
+      }
 
-    await writeIndex(summaries);
+      await writeIndex(summaries);
+    });
   }
 
   function truncateTitle(text: string): string {
@@ -104,8 +141,9 @@ export function createConversationStore(
     },
 
     async load(id: string) {
+      validateId(id);
       const data = await readFile(conversationPath(id), "utf-8");
-      return JSON.parse(data) as Conversation;
+      return validateConversation(JSON.parse(data));
     },
 
     async save(conversation: Conversation) {
