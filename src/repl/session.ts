@@ -111,6 +111,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
           showPrompt();
           return;
         case "/exit":
+          exitRequested = true;
           rl.close();
           return;
         default:
@@ -176,6 +177,8 @@ export function startSession(deps: SessionDeps): Promise<void> {
       showPrompt();
     }
 
+    let exitRequested = false;
+
     // Multi-line paste handling via debounce
     let lineBuffer: string[] = [];
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -215,7 +218,8 @@ export function startSession(deps: SessionDeps): Promise<void> {
         clearTimeout(debounceTimer);
         debounceTimer = null;
       }
-      renderer.info("\n\nGoodbye!");
+      const goodbye = exitRequested ? "Goodbye!" : "\n\nGoodbye!";
+      renderer.info(goodbye);
       resolve();
     });
 
