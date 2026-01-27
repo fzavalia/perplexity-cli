@@ -141,7 +141,6 @@ export function startSession(deps: SessionDeps): Promise<void> {
 
       try {
         conversation = await store.load(id);
-        console.log();
         replayMessages(conversation);
       } catch {
         renderer.error(`Conversation not found: ${id}`);
@@ -170,7 +169,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
           return `${s.id.padEnd(idWidth)}  ${s.title.padEnd(titleWidth)}  ${date}`;
         });
 
-        renderer.info(["", header, separator, ...rows, ""].join("\n"));
+        renderer.info([header, separator, ...rows].join("\n"));
       } catch (error) {
         renderer.error(`Failed to list conversations: ${error}`);
       }
