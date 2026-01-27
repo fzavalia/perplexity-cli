@@ -1,9 +1,11 @@
 import chalk from "chalk";
+import type { SearchResult } from "../api/perplexity.js";
 
 export type Renderer = {
   userMessage(content: string): void;
   assistantToken(token: string): void;
   assistantEnd(): void;
+  sources(results: SearchResult[]): void;
   error(message: string): void;
   info(message: string): void;
 };
@@ -36,6 +38,16 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
     assistantEnd() {
       process.stdout.write("\n");
       isFirstToken = true;
+    },
+
+    sources(results: SearchResult[]) {
+      console.log("");
+      for (let i = 0; i < results.length; i++) {
+        const label = useColor
+          ? chalk.dim(`[${i + 1}] `) + chalk.underline(results[i].url)
+          : `[${i + 1}] ${results[i].url}`;
+        console.log(label);
+      }
     },
 
     error(message: string) {

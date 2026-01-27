@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "@inquirer/select": "^4.2.0",
+    "@perplexity-ai/perplexity_ai": "^0.22.0",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
-    "nanoid": "^5.1.3",
-    "openai": "^4.87.3"
+    "nanoid": "^5.1.3"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",

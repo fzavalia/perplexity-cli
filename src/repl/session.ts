@@ -45,13 +45,21 @@ export async function startSession(deps: SessionDeps): Promise<void> {
     try {
       rl.pause();
       let fullResponse = "";
+      let sources: import("../api/perplexity.js").SearchResult[] = [];
 
-      for await (const token of client.streamChat(conv.messages)) {
-        renderer.assistantToken(token);
-        fullResponse += token;
+      for await (const event of client.streamChat(conv.messages)) {
+        if (event.type === "token") {
+          renderer.assistantToken(event.content);
+          fullResponse += event.content;
+        } else if (event.type === "sources") {
+          sources = event.results;
+        }
       }
 
       renderer.assistantEnd();
+      if (sources.length > 0) {
+        renderer.sources(sources);
+      }
       store.addMessage(conv, "assistant", fullResponse);
       await store.save(conv);
     } catch (error) {

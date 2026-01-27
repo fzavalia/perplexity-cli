@@ -1,20 +1,25 @@
-import OpenAI from "openai";
+import Perplexity from "@perplexity-ai/perplexity_ai";
 import type { Message } from "../types.js";
 
 const MODEL = "sonar-pro";
-const BASE_URL = "https://api.perplexity.ai";
+
+export type SearchResult = {
+  title: string;
+  url: string;
+};
+
+export type StreamEvent =
+  | { type: "token"; content: string }
+  | { type: "sources"; results: SearchResult[] };
 
 export type PerplexityClient = {
   streamChat(
     messages: Message[]
-  ): AsyncGenerator<string, void, undefined>;
+  ): AsyncGenerator<StreamEvent, void, undefined>;
 };
 
 export function createPerplexityClient(apiKey: string): PerplexityClient {
-  const client = new OpenAI({
-    apiKey,
-    baseURL: BASE_URL,
-  });
+  const client = new Perplexity({ apiKey });
 
   return {
     async *streamChat(messages) {
@@ -27,10 +32,23 @@ export function createPerplexityClient(apiKey: string): PerplexityClient {
         })),
       });
 
+      let sourcesSent = false;
+
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
-        if (content) {
-          yield content;
+        if (typeof content === "string") {
+          yield { type: "token", content };
+        }
+
+        if (!sourcesSent && chunk.search_results && chunk.search_results.length > 0) {
+          sourcesSent = true;
+          yield {
+            type: "sources",
+            results: chunk.search_results.map((r) => ({
+              title: r.title,
+              url: r.url,
+            })),
+          };
         }
       }
     },
@@ -38,7 +56,7 @@ export function createPerplexityClient(apiKey: string): PerplexityClient {
 }
 
 export function classifyApiError(error: unknown): string {
-  if (error instanceof OpenAI.APIError) {
+  if (error instanceof Perplexity.APIError) {
     switch (error.status) {
       case 401:
         return "Invalid API key. Check your PERPLEXITY_API_KEY.";
@@ -55,7 +73,7 @@ export function classifyApiError(error: unknown): string {
     }
   }
 
-  if (error instanceof OpenAI.APIConnectionError) {
+  if (error instanceof Perplexity.APIConnectionError) {
     return "Could not reach api.perplexity.ai. Check your connection.";
   }
 
