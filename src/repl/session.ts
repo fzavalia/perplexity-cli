@@ -33,6 +33,11 @@ export function startSession(deps: SessionDeps): Promise<void> {
       prompt: PROMPT,
     });
 
+    function showPrompt(): void {
+      console.log();
+      rl.prompt();
+    }
+
     async function ensureConversation(firstMessage: string): Promise<Conversation> {
       if (conversation) return conversation;
       conversation = await store.create(firstMessage);
@@ -73,8 +78,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
         renderer.error(classifyApiError(error));
       } finally {
         rl.resume();
-        process.stdout.write("\n");
-        rl.prompt();
+        showPrompt();
       }
     }
 
@@ -85,7 +89,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
       switch (command) {
         case "/help":
           renderer.info(HELP_TEXT);
-          rl.prompt();
+          showPrompt();
           return;
         case "/list":
           handleList().catch((e) => renderer.error(String(e)));
@@ -95,7 +99,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
           return;
         default:
           renderer.error(`Unknown command: ${command}`);
-          rl.prompt();
+          showPrompt();
           return;
       }
     }
@@ -114,7 +118,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
     async function handleResume(id: string | undefined): Promise<void> {
       if (!id) {
         renderer.error("Usage: /resume <id>");
-        rl.prompt();
+        showPrompt();
         return;
       }
 
@@ -125,7 +129,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
       } catch {
         renderer.error(`Conversation not found: ${id}`);
       }
-      rl.prompt();
+      showPrompt();
     }
 
     async function handleList(): Promise<void> {
@@ -134,7 +138,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
 
         if (summaries.length === 0) {
           renderer.info("No conversations yet.");
-          rl.prompt();
+          showPrompt();
           return;
         }
 
@@ -153,7 +157,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
       } catch {
         renderer.error("Failed to list conversations.");
       }
-      rl.prompt();
+      showPrompt();
     }
 
     // Multi-line paste handling via debounce
@@ -166,9 +170,11 @@ export function startSession(deps: SessionDeps): Promise<void> {
       debounceTimer = null;
 
       if (!content) {
-        rl.prompt();
+        showPrompt();
         return;
       }
+
+      console.log();
 
       if (content.startsWith("/")) {
         handleSlashCommand(content);
@@ -197,6 +203,6 @@ export function startSession(deps: SessionDeps): Promise<void> {
       replayMessages(conversation);
     }
 
-    rl.prompt();
+    showPrompt();
   });
 }
