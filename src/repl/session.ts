@@ -195,7 +195,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
     });
 
     rl.on("close", () => {
-      renderer.info("\nGoodbye!");
+      renderer.info("\n\nGoodbye!");
       resolve();
     });
 
