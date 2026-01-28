@@ -66,7 +66,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
           }
         }
 
-        renderer.assistantEnd(fullResponse);
+        renderer.assistantEnd();
         const citedSources = sources
           .map((s, i) => ({ ...s, index: i + 1 }))
           .filter((s) => fullResponse.includes(`[${s.index}]`));
@@ -76,7 +76,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
         store.addMessage(conv, "assistant", fullResponse);
         await store.save(conv);
       } catch (error) {
-        renderer.assistantEnd("");
+        renderer.assistantEnd();
         renderer.error(classifyApiError(error));
       } finally {
         rl.resume();

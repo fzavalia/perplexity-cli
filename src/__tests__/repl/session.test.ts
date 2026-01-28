@@ -162,7 +162,7 @@ describe("startSession", () => {
       lineHandler("hi");
       await vi.advanceTimersByTimeAsync(20);
 
-      expect(r.assistantEnd).toHaveBeenCalledWith("reply");
+      expect(r.assistantEnd).toHaveBeenCalled();
     });
 
     it("filters and displays only cited sources", async () => {

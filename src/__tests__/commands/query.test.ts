@@ -5,13 +5,11 @@ const {
   mockCreatePerplexityClient,
   mockClassifyApiError,
   mockCreateConversationStore,
-  mockCreateMarkdownRenderer,
   mockCreateRenderer,
 } = vi.hoisted(() => ({
   mockCreatePerplexityClient: vi.fn(),
   mockClassifyApiError: vi.fn((e: unknown) => `classified: ${e}`),
   mockCreateConversationStore: vi.fn(),
-  mockCreateMarkdownRenderer: vi.fn(),
   mockCreateRenderer: vi.fn(),
 }));
 
@@ -22,10 +20,6 @@ vi.mock("../../api/perplexity.js", () => ({
 
 vi.mock("../../store/conversation.js", () => ({
   createConversationStore: mockCreateConversationStore,
-}));
-
-vi.mock("../../ui/markdown.js", () => ({
-  createMarkdownRenderer: mockCreateMarkdownRenderer,
 }));
 
 vi.mock("../../ui/renderer.js", () => ({
@@ -99,7 +93,6 @@ describe("runQuery", () => {
     mockRendererObj = makeRenderer();
 
     mockCreateConversationStore.mockReturnValue(mockStore);
-    mockCreateMarkdownRenderer.mockReturnValue({ render: vi.fn() });
     mockCreateRenderer.mockReturnValue(mockRendererObj);
     mockCreatePerplexityClient.mockReturnValue(
       makeClient([{ type: "token", content: "response" }])
@@ -159,7 +152,7 @@ describe("runQuery", () => {
 
   it("calls assistantEnd after streaming", async () => {
     await runQuery("hi");
-    expect(mockRendererObj.assistantEnd).toHaveBeenCalledWith("response");
+    expect(mockRendererObj.assistantEnd).toHaveBeenCalled();
   });
 
   it("saves conversation with assistant response", async () => {

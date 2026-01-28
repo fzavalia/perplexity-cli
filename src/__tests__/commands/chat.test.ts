@@ -3,13 +3,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 const {
   mockCreatePerplexityClient,
   mockCreateConversationStore,
-  mockCreateMarkdownRenderer,
   mockCreateRenderer,
   mockStartSession,
 } = vi.hoisted(() => ({
   mockCreatePerplexityClient: vi.fn(),
   mockCreateConversationStore: vi.fn(),
-  mockCreateMarkdownRenderer: vi.fn(),
   mockCreateRenderer: vi.fn(),
   mockStartSession: vi.fn(),
 }));
@@ -20,10 +18,6 @@ vi.mock("../../api/perplexity.js", () => ({
 
 vi.mock("../../store/conversation.js", () => ({
   createConversationStore: mockCreateConversationStore,
-}));
-
-vi.mock("../../ui/markdown.js", () => ({
-  createMarkdownRenderer: mockCreateMarkdownRenderer,
 }));
 
 vi.mock("../../ui/renderer.js", () => ({
@@ -50,7 +44,6 @@ function makeStore() {
 }
 
 let mockStore: ReturnType<typeof makeStore>;
-let mockMarkdown: { render: ReturnType<typeof vi.fn> };
 let mockRendererObj: { assistantToken: ReturnType<typeof vi.fn> };
 let mockClient: { streamChat: ReturnType<typeof vi.fn> };
 let exitSpy: ReturnType<typeof vi.spyOn>;
@@ -64,12 +57,10 @@ describe("runChat", () => {
     process.env["PERPLEXITY_API_KEY"] = "test-key";
 
     mockStore = makeStore();
-    mockMarkdown = { render: vi.fn() };
     mockRendererObj = { assistantToken: vi.fn() };
     mockClient = { streamChat: vi.fn() };
 
     mockCreateConversationStore.mockReturnValue(mockStore);
-    mockCreateMarkdownRenderer.mockReturnValue(mockMarkdown);
     mockCreateRenderer.mockReturnValue(mockRendererObj);
     mockCreatePerplexityClient.mockReturnValue(mockClient);
     mockStartSession.mockResolvedValue(undefined);
@@ -109,10 +100,9 @@ describe("runChat", () => {
     expect(mockStore.ensureDirectory).toHaveBeenCalled();
   });
 
-  it("creates markdown renderer and renderer", async () => {
+  it("creates renderer", async () => {
     await runChat();
-    expect(mockCreateMarkdownRenderer).toHaveBeenCalled();
-    expect(mockCreateRenderer).toHaveBeenCalledWith({ markdown: mockMarkdown });
+    expect(mockCreateRenderer).toHaveBeenCalled();
   });
 
   it("starts session with correct deps", async () => {

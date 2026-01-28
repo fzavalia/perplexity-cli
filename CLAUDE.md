@@ -26,9 +26,8 @@ src/
     session.ts       → startSession(deps): readline loop, multi-line paste (10ms debounce),
                        slash commands (/help, /list, /resume, /clear), deferred conversation creation
   ui/
-    markdown.ts      → createMarkdownRenderer(): marked + marked-terminal for terminal formatting
     renderer.ts      → createRenderer(): streaming token output, TTY/NO_COLOR aware,
-                       clears raw text and re-renders formatted markdown on assistantEnd()
+                       color support for sources/errors/info
 ```
 
 Data lives in `~/.perplexity-cli/conversations/` — each conversation as `<id>.json` with an `index.json` for fast listing.
@@ -52,7 +51,6 @@ src/__tests__/
   store/
     conversation.test.ts      → CRUD tests (real temp directories)
   ui/
-    markdown.test.ts          → render tests (real marked)
     renderer.test.ts          → output tests (spied stdout/console)
 ```
 
@@ -61,13 +59,13 @@ src/__tests__/
 - `npm run build` — compile TypeScript to `dist/`
 - `npm run dev` — watch mode
 - `npm start` — run `dist/index.js`
-- `npm test` / `npm run test:watch` — vitest (108 tests)
+- `npm test` / `npm run test:watch` — vitest (98 tests)
 
 Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 
 ## Tech stack
 
-TypeScript (ES2020, ESM), Node.js >=18, commander, @perplexity-ai/perplexity_ai SDK, chalk v5, nanoid v5, marked + marked-terminal.
+TypeScript (ES2020, ESM), Node.js >=18, commander, @perplexity-ai/perplexity_ai SDK, chalk v5, nanoid v5.
 
 ## Key patterns
 

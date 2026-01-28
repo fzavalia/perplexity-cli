@@ -1,7 +1,6 @@
 import { createPerplexityClient, classifyApiError } from "../api/perplexity.js";
 import type { SearchResult } from "../api/perplexity.js";
 import { createConversationStore } from "../store/conversation.js";
-import { createMarkdownRenderer } from "../ui/markdown.js";
 import { createRenderer } from "../ui/renderer.js";
 
 export async function runQuery(
@@ -19,8 +18,7 @@ export async function runQuery(
 
   const client = createPerplexityClient(apiKey);
   const store = createConversationStore();
-  const markdown = createMarkdownRenderer();
-  const renderer = createRenderer({ markdown });
+  const renderer = createRenderer();
 
   await store.ensureDirectory();
 
@@ -42,7 +40,7 @@ export async function runQuery(
       }
     }
 
-    renderer.assistantEnd(fullResponse);
+    renderer.assistantEnd();
 
     store.addMessage(conversation, "assistant", fullResponse);
     await store.save(conversation);
@@ -57,7 +55,7 @@ export async function runQuery(
 
     renderer.info(`\nFollow up: perplexity --follow-up ${conversation.id} "your question"`);
   } catch (error) {
-    renderer.assistantEnd("");
+    renderer.assistantEnd();
     renderer.error(classifyApiError(error));
     process.exit(1);
   }
