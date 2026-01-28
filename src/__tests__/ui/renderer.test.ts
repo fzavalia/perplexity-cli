@@ -46,21 +46,25 @@ describe("createRenderer", () => {
   });
 
   describe("assistantEnd", () => {
-    it("writes newline", () => {
+    it("clears raw text and renders markdown", () => {
       const r = createRenderer();
-      r.assistantToken("x");
+      r.assistantToken("**bold**");
       stdoutWriteSpy.mockClear();
       r.assistantEnd();
-      expect(stdoutWriteSpy).toHaveBeenCalledWith("\n");
+      // Should clear the raw text (move up, clear line) and render formatted
+      expect(stdoutWriteSpy).toHaveBeenCalled();
     });
 
-    it("resets first token flag", () => {
+    it("resets buffer for next response", () => {
       const r = createRenderer();
-      r.assistantToken("x");
+      r.assistantToken("first");
       r.assistantEnd();
       stdoutWriteSpy.mockClear();
-      r.assistantToken("y");
-      expect(stdoutWriteSpy).toHaveBeenCalledWith("\n");
+      r.assistantToken("second");
+      r.assistantEnd();
+      // Should only contain "second", not "firstsecond"
+      const calls = stdoutWriteSpy.mock.calls.flat().join("");
+      expect(calls).not.toContain("first");
     });
   });
 
