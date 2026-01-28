@@ -2,6 +2,8 @@
 
 A terminal interface to Perplexity's chat models with streaming responses, source citations, and conversation persistence.
 
+![Demo](demo.gif)
+
 ## Features
 
 - Streaming responses from Perplexity's `sonar-pro` model
