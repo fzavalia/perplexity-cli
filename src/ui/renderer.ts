@@ -2,6 +2,9 @@ import chalk from "chalk";
 import type { SearchResult } from "../api/perplexity.js";
 import type { MarkdownRenderer } from "./markdown.js";
 
+const ANSI_CURSOR_TO_COL1_CLEAR_LINE = "\x1b[1G\x1b[2K";
+const ANSI_UP1_COL1_CLEAR_TO_END = "\x1b[1A\x1b[1G\x1b[0J";
+
 export type IndexedSource = SearchResult & { index: number };
 
 export type Renderer = {
@@ -30,7 +33,7 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
 
   function writeIndicator(): void {
     process.stdout.write(
-      `\x1b[1G\x1b[2K${chalk.dim(`Thinking (${tokenCount})`)}`
+      `${ANSI_CURSOR_TO_COL1_CLEAR_LINE}${chalk.dim(`Thinking (${tokenCount})`)}`
     );
   }
 
@@ -52,7 +55,7 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
 
     assistantEnd(fullResponse: string) {
       if (useMarkdown && !isFirstToken) {
-        process.stdout.write(`\x1b[1A\x1b[1G\x1b[0J`);
+        process.stdout.write(ANSI_UP1_COL1_CLEAR_TO_END);
         if (fullResponse) {
           const rendered = markdown!.render(fullResponse);
           const styled = rendered.replace(/\[(\d+)\]/g, (m) => chalk.dim(m));
