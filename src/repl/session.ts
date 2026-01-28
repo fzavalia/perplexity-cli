@@ -190,8 +190,6 @@ export function startSession(deps: SessionDeps): Promise<void> {
         return;
       }
 
-      console.log();
-
       if (content.startsWith("/") && !content.includes("\n")) {
         handleSlashCommand(content);
         return;
