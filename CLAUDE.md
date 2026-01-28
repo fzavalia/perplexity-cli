@@ -72,6 +72,7 @@ TypeScript (ES2020, ESM), Node.js >=18, commander, @perplexity-ai/perplexity_ai 
 
 ## Conventions
 
+- Never commit unless explicitly asked to
 - Conventional Commits: `<type>(scope): <description>` (feat, fix, docs, refactor, etc.)
 - Before committing: if a feature was added, changed, or removed, update `README.md` and `CLAUDE.md` to reflect the change
 - Small single-responsibility functions, descriptive names, no magic numbers
