@@ -42,6 +42,7 @@ export function createMockStore(): {
       role: "user",
       content: "",
       createdAt: new Date().toISOString(),
+      sources: [],
     }),
     listSummaries: vi.fn().mockResolvedValue([]),
     hasConversations: vi.fn().mockResolvedValue(false),

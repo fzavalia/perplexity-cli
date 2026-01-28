@@ -98,8 +98,8 @@ describe("startSession", () => {
       const r = renderer();
       const conv = makeConversation({
         messages: [
-          { id: "1", role: "user", content: "hello", createdAt: "2024-01-01T00:00:00Z" },
-          { id: "2", role: "assistant", content: "hi there", createdAt: "2024-01-01T00:00:01Z" },
+          { id: "1", role: "user", content: "hello", createdAt: "2024-01-01T00:00:00Z", sources: [] },
+          { id: "2", role: "assistant", content: "hi there", createdAt: "2024-01-01T00:00:01Z", sources: [] },
         ],
       });
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: conv });
@@ -378,8 +378,8 @@ describe("startSession", () => {
       const r = renderer();
       const conv = makeConversation({
         messages: [
-          { id: "1", role: "user", content: "q", createdAt: "2024-01-01T00:00:00Z" },
-          { id: "2", role: "assistant", content: "a", createdAt: "2024-01-01T00:00:01Z" },
+          { id: "1", role: "user", content: "q", createdAt: "2024-01-01T00:00:00Z", sources: [] },
+          { id: "2", role: "assistant", content: "a", createdAt: "2024-01-01T00:00:01Z", sources: [] },
         ],
       });
       s.load.mockResolvedValue(conv);

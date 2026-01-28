@@ -159,13 +159,13 @@ export function createConversationStore(
       await updateIndex(conversation);
     },
 
-    addMessage(conversation, role, content, sources) {
+    addMessage(conversation, role, content, sources = []) {
       const message: Message = {
         id: nanoid(10),
         role,
         content,
         createdAt: new Date().toISOString(),
-        ...(sources && sources.length > 0 ? { sources } : {}),
+        sources,
       };
       conversation.messages.push(message);
       return message;
