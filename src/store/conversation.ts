@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { nanoid } from "nanoid";
-import type { Conversation, ConversationSummary, Message } from "../types.js";
+import type { Conversation, ConversationSummary, Message, MessageSource } from "../types.js";
 
 const DEFAULT_BASE_PATH = join(homedir(), ".perplexity-cli", "conversations");
 const INDEX_FILE = "index.json";
@@ -17,7 +17,8 @@ export type ConversationStore = {
   addMessage(
     conversation: Conversation,
     role: "user" | "assistant",
-    content: string
+    content: string,
+    sources?: MessageSource[]
   ): Message;
   listSummaries(): Promise<ConversationSummary[]>;
   hasConversations(): Promise<boolean>;
@@ -158,12 +159,13 @@ export function createConversationStore(
       await updateIndex(conversation);
     },
 
-    addMessage(conversation, role, content) {
+    addMessage(conversation, role, content, sources) {
       const message: Message = {
         id: nanoid(10),
         role,
         content,
         createdAt: new Date().toISOString(),
+        ...(sources && sources.length > 0 ? { sources } : {}),
       };
       conversation.messages.push(message);
       return message;

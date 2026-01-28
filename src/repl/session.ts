@@ -75,7 +75,8 @@ export function startSession(deps: SessionDeps): Promise<void> {
         if (citedSources.length > 0) {
           renderer.sources(citedSources);
         }
-        store.addMessage(conv, "assistant", fullResponse);
+        const sourcesToStore = citedSources.map(({ title, url }) => ({ title, url }));
+        store.addMessage(conv, "assistant", fullResponse, sourcesToStore);
         await store.save(conv);
       } catch (error) {
         renderer.assistantEnd();
@@ -87,6 +88,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
     }
 
     function handleSlashCommand(input: string): void {
+      console.log();
       const trimmed = input.trim();
       const [command, ...args] = trimmed.split(/\s+/);
 
@@ -128,7 +130,12 @@ export function startSession(deps: SessionDeps): Promise<void> {
         if (msg.role === "user") {
           console.log(`${PROMPT}${msg.content}`);
         } else {
+          console.log();
           renderer.assistantComplete(msg.content);
+          if (msg.sources && msg.sources.length > 0) {
+            const indexedSources = msg.sources.map((s, i) => ({ ...s, index: i + 1 }));
+            renderer.sources(indexedSources);
+          }
         }
       }
     }

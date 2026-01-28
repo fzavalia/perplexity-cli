@@ -211,7 +211,7 @@ describe("startSession", () => {
       lineHandler("hi");
       await vi.advanceTimersByTimeAsync(20);
 
-      expect(s.addMessage).toHaveBeenCalledWith(conv, "assistant", "reply");
+      expect(s.addMessage).toHaveBeenCalledWith(conv, "assistant", "reply", []);
       expect(s.save).toHaveBeenCalledTimes(2);
     });
 
