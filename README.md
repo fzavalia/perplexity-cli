@@ -92,6 +92,13 @@ src/
   ui/
     markdown.ts         Markdown-to-terminal rendering (marked + marked-terminal)
     renderer.ts         Streaming output + source citation display
+  __tests__/
+    helpers.ts          Shared test utilities
+    api/                Tests for API module
+    commands/           Tests for command modules
+    repl/               Tests for REPL session
+    store/              Tests for conversation store
+    ui/                 Tests for UI modules
 ```
 
 ## Development

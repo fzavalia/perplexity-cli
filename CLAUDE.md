@@ -33,12 +33,35 @@ src/
 
 Data lives in `~/.perplexity-cli/conversations/` — each conversation as `<id>.json` with an `index.json` for fast listing.
 
+## Tests
+
+Unit tests live in `src/__tests__/`, mirroring the source structure:
+
+```
+src/__tests__/
+  helpers.ts                  → shared test utilities (mock factories, collectEvents)
+  index.test.ts               → CLI action routing tests
+  api/
+    perplexity-error.test.ts  → classifyApiError tests (real SDK error constructors)
+    perplexity-client.test.ts → streamChat tests (mocked SDK)
+  commands/
+    chat.test.ts              → runChat tests (mocked deps)
+    query.test.ts             → runQuery tests (mocked deps)
+  repl/
+    session.test.ts           → startSession tests (mocked readline, fake timers)
+  store/
+    conversation.test.ts      → CRUD tests (real temp directories)
+  ui/
+    markdown.test.ts          → render tests (real marked)
+    renderer.test.ts          → output tests (spied stdout/console)
+```
+
 ## Build & run
 
 - `npm run build` — compile TypeScript to `dist/`
 - `npm run dev` — watch mode
 - `npm start` — run `dist/index.js`
-- `npm test` / `npm run test:watch` — vitest
+- `npm test` / `npm run test:watch` — vitest (108 tests)
 
 Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 
