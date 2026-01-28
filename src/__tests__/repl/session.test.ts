@@ -78,6 +78,14 @@ describe("startSession", () => {
   });
 
   describe("Init", () => {
+    it("shows intro message on start", () => {
+      const s = store();
+      const r = renderer();
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      expect(r.info).toHaveBeenCalledWith(expect.stringContaining("Perplexity CLI"));
+      expect(r.info).toHaveBeenCalledWith(expect.stringContaining("/help"));
+    });
+
     it("prompts on start", () => {
       const s = store();
       const r = renderer();

@@ -44,7 +44,10 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
     sources(results: IndexedSource[]) {
       console.log("");
       for (const source of results) {
-        console.log(`[${source.index}] ${source.url}`);
+        const label = useColor
+          ? chalk.dim(`[${source.index}] `) + chalk.blue.underline(source.url)
+          : `[${source.index}] ${source.url}`;
+        console.log(label);
       }
     },
 

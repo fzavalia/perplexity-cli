@@ -24,7 +24,7 @@ src/
                        slash commands (/help, /list, /resume, /clear), deferred conversation creation
   ui/
     renderer.ts      → createRenderer(): streaming token output, TTY/NO_COLOR aware,
-                       color support for errors/info
+                       color support for sources/errors/info
 ```
 
 Data lives in `~/.perplexity-cli/conversations/` — each conversation as `<id>.json` with an `index.json` for fast listing.

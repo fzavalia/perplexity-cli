@@ -17,6 +17,8 @@ type SessionDeps = {
 
 const LIST_MAX_ITEMS = 20;
 
+const INTRO_TEXT = `\n🚀 Perplexity CLI - Ask anything or type /help for commands`;
+
 const HELP_TEXT = `Available commands:
   /help         Show this help message
   /list         List saved conversations
@@ -217,6 +219,9 @@ export function startSession(deps: SessionDeps): Promise<void> {
       renderer.info(goodbye);
       resolve();
     });
+
+    renderer.info(INTRO_TEXT);
+    console.log();
 
     if (conversation && conversation.messages.length > 0) {
       replayMessages(conversation);
