@@ -2,7 +2,7 @@
 
 A terminal interface to Perplexity's chat models with streaming responses, source citations, and conversation persistence.
 
-![Demo](demo.gif)
+![Demo](preview.gif)
 
 ## Features
 
