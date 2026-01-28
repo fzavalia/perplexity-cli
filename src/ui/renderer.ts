@@ -17,10 +17,7 @@ export type Renderer = {
 marked.use(markedTerminal() as Parameters<typeof marked.use>[0]);
 
 function renderMarkdown(text: string): string {
-  const result = marked.parse(text);
-  if (typeof result !== "string") {
-    return text;
-  }
+  const result = marked.parse(text, { async: false });
   return result.trim();
 }
 

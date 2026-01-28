@@ -23,8 +23,8 @@ src/
     session.ts       → startSession(deps): readline loop, multi-line paste (10ms debounce),
                        slash commands (/help, /list, /resume, /clear), deferred conversation creation
   ui/
-    renderer.ts      → createRenderer(): streaming token output, TTY/NO_COLOR aware,
-                       color support for sources/errors/info
+    renderer.ts      → createRenderer(): streaming token output with markdown rendering
+                       (marked + marked-terminal), color support for sources/errors/info
 ```
 
 Data lives in `~/.perplexity-cli/conversations/` — each conversation as `<id>.json` with an `index.json` for fast listing.

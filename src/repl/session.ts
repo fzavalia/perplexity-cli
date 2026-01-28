@@ -29,6 +29,7 @@ const HELP_TEXT = `Available commands:
 export function startSession(deps: SessionDeps): Promise<void> {
   const { client, store, renderer } = deps;
   let conversation = deps.conversation;
+  let exitRequested = false;
 
   return new Promise<void>((resolve) => {
     const rl = createInterface({
@@ -132,7 +133,7 @@ export function startSession(deps: SessionDeps): Promise<void> {
         } else {
           console.log();
           renderer.assistantComplete(msg.content);
-          if (msg.sources && msg.sources.length > 0) {
+          if (msg.sources.length > 0) {
             const indexedSources = msg.sources.map((s, i) => ({ ...s, index: i + 1 }));
             renderer.sources(indexedSources);
           }
@@ -183,8 +184,6 @@ export function startSession(deps: SessionDeps): Promise<void> {
       }
       showPrompt();
     }
-
-    let exitRequested = false;
 
     let lineBuffer: string[] = [];
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
