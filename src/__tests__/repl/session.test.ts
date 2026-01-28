@@ -64,6 +64,7 @@ describe("startSession", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    vi.spyOn(console, "log").mockImplementation(() => {});
     // Re-wire mockRl.close to emit close event
     mockRl.close.mockImplementation(() => {
       const closeHandler = getHandler("close");
@@ -73,6 +74,7 @@ describe("startSession", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   describe("Init", () => {
