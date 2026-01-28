@@ -78,3 +78,4 @@ TypeScript (ES2020, ESM), Node.js >=18, commander, @perplexity-ai/perplexity_ai 
 - Small single-responsibility functions, descriptive names, no magic numbers
 - Prefer self-documenting code over comments
 - Dependency injection, Law of Demeter
+- Always use TDD: write tests first (red), implement to pass (green), refactor
