@@ -82,10 +82,11 @@ export function createConversationStore(
   }
 
   function withIndexLock<T>(fn: () => Promise<T>): Promise<T> {
-    // Run fn after previous op completes (regardless of success/failure)
     const next = indexLock.then(fn, fn);
-    // Keep chain always-resolving so future ops are never blocked by past failures
-    indexLock = next.then(() => {}, () => {});
+    indexLock = next.then(
+      () => {},
+      () => {}
+    );
     return next;
   }
 
@@ -112,7 +113,7 @@ export function createConversationStore(
 
   function truncateTitle(text: string): string {
     if (text.length <= TITLE_MAX_LENGTH) return text;
-    return text.slice(0, TITLE_MAX_LENGTH - 1) + "…";
+    return text.slice(0, TITLE_MAX_LENGTH - 1) + "\u2026";
   }
 
   return {
@@ -121,7 +122,7 @@ export function createConversationStore(
       try {
         await writeFile(indexPath(), "[]", { flag: "wx" });
       } catch {
-        // index already exists — ignore
+        // index already exists
       }
     },
 

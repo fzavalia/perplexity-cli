@@ -44,7 +44,7 @@ export function createPerplexityClient(apiKey: string): PerplexityClient {
           sourcesSent = true;
           yield {
             type: "sources",
-            results: chunk.search_results.map((r) => ({
+            results: chunk.search_results.map((r: { title: string; url: string }) => ({
               title: r.title,
               url: r.url,
             })),

@@ -6,7 +6,7 @@ import type { ConversationStore } from "../store/conversation.js";
 import { classifyApiError } from "../api/perplexity.js";
 
 const PASTE_DEBOUNCE_MS = 10;
-const PROMPT = "❯ ";
+const PROMPT = "\u276F ";
 
 type SessionDeps = {
   client: PerplexityClient;
@@ -177,7 +177,6 @@ export function startSession(deps: SessionDeps): Promise<void> {
 
     let exitRequested = false;
 
-    // Multi-line paste handling via debounce
     let lineBuffer: string[] = [];
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 

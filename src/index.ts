@@ -8,18 +8,27 @@ import { runQuery } from "./commands/query.js";
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 
+export type ActionOptions = {
+  followUp?: string;
+};
+
+export async function handleAction(
+  question?: string,
+  opts: ActionOptions = {}
+): Promise<void> {
+  if (opts.followUp && !question) {
+    console.error("--follow-up requires a question argument.");
+    process.exit(1);
+  }
+  return question ? runQuery(question, opts.followUp) : runChat();
+}
+
 program
   .name("perplexity")
   .description("Terminal interface to Perplexity chat models")
   .version(version)
   .argument("[question]", "Ask a question and exit")
   .option("--follow-up <id>", "Follow up on a saved conversation")
-  .action((question?: string, opts?: { followUp?: string }) => {
-    if (opts?.followUp && !question) {
-      console.error("--follow-up requires a question argument.");
-      process.exit(1);
-    }
-    return question ? runQuery(question, opts?.followUp) : runChat();
-  });
+  .action(handleAction);
 
 program.parse();
