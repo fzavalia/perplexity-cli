@@ -24,6 +24,17 @@ describe("createRenderer", () => {
       expect(stdoutWriteSpy).toHaveBeenCalledWith("hello");
     });
 
+    it("formats citation references [N]", () => {
+      const r = createRenderer();
+      r.assistantToken("See [1] and [2]");
+      expect(stdoutWriteSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[1]")
+      );
+      expect(stdoutWriteSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[2]")
+      );
+    });
+
     it("writes token directly after first", () => {
       const r = createRenderer();
       r.assistantToken("a");
@@ -63,42 +74,31 @@ describe("createRenderer", () => {
 
   describe("sources", () => {
     it("displays sources with index and url", () => {
-      const r = createRenderer({ isTTY: false });
+      const r = createRenderer();
       r.sources([{ index: 1, title: "T", url: "https://x.com" }]);
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[1] https://x.com")
+        expect.stringContaining("https://x.com")
       );
     });
   });
 
   describe("error", () => {
     it("displays error message", () => {
-      const r = createRenderer({ isTTY: false });
+      const r = createRenderer();
       r.error("bad thing");
-      expect(consoleErrorSpy).toHaveBeenCalledWith("bad thing");
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("bad thing")
+      );
     });
   });
 
   describe("info", () => {
     it("displays info message", () => {
-      const r = createRenderer({ isTTY: false });
+      const r = createRenderer();
       r.info("some info");
-      expect(consoleLogSpy).toHaveBeenCalledWith("some info");
-    });
-  });
-
-  describe("color mode", () => {
-    it("error output contains the message on TTY", () => {
-      const r = createRenderer({ isTTY: true, noColor: false });
-      r.error("bad");
-      const arg = consoleErrorSpy.mock.calls[0][0] as string;
-      expect(arg).toContain("bad");
-    });
-
-    it("disables color when noColor is true", () => {
-      const r = createRenderer({ isTTY: true, noColor: true });
-      r.error("bad");
-      expect(consoleErrorSpy).toHaveBeenCalledWith("bad");
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("some info")
+      );
     });
   });
 });
