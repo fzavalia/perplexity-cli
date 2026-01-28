@@ -10,13 +10,10 @@ Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models. 
 
 ```
 src/
-  index.ts           → CLI entry (shebang), commander setup, optional [question] argument,
-                       --follow-up <id> flag; routes to runQuery / runChat accordingly
+  index.ts           → CLI entry (shebang), commander setup, runs runChat
   types.ts           → shared types: Message, Conversation, ConversationSummary
   commands/
     chat.ts          → runChat(): validates PERPLEXITY_API_KEY, wires deps, starts session
-    query.ts         → runQuery(question, followUpId?): one-shot query, persists conversation,
-                       streams response + sources, prints follow-up command, exits
   api/
     perplexity.ts    → createPerplexityClient(apiKey): streamChat async generator via OpenAI SDK
                        classifyApiError(): maps errors to user-friendly messages
@@ -39,13 +36,12 @@ Unit tests live in `src/__tests__/`, mirroring the source structure:
 ```
 src/__tests__/
   helpers.ts                  → shared test utilities (mock factories, collectEvents)
-  index.test.ts               → CLI action routing tests
+  index.test.ts               → CLI entry tests
   api/
     perplexity-error.test.ts  → classifyApiError tests (real SDK error constructors)
     perplexity-client.test.ts → streamChat tests (mocked SDK)
   commands/
     chat.test.ts              → runChat tests (mocked deps)
-    query.test.ts             → runQuery tests (mocked deps)
   repl/
     session.test.ts           → startSession tests (mocked readline, fake timers)
   store/
@@ -59,7 +55,7 @@ src/__tests__/
 - `npm run build` — compile TypeScript to `dist/`
 - `npm run dev` — watch mode
 - `npm start` — run `dist/index.js`
-- `npm test` / `npm run test:watch` — vitest (98 tests)
+- `npm test` / `npm run test:watch` — vitest (86 tests)
 
 Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 

@@ -8,8 +8,6 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 - Source citations displayed after each response
 - Conversation history saved locally
 - Multi-line paste support
-- One-shot query mode (`perplexity "question"`)
-- Follow-up queries (`perplexity --follow-up <id> "question"`)
 - Slash commands: `/help`, `/list`, `/resume`, `/clear`
 
 ## Requirements
@@ -40,25 +38,11 @@ Start an interactive conversation:
 npm start
 ```
 
-Ask a one-shot question (streams the answer and exits):
-
-```bash
-npm start -- "What is TypeScript?"
-```
-
-Follow up on a previous query using the conversation ID printed after each answer:
-
-```bash
-npm start -- --follow-up <id> "Tell me more about interfaces"
-```
-
 ### Global install
 
 ```bash
 npm link
-perplexity                                              # interactive mode
-perplexity "What is TypeScript?"                        # one-shot mode
-perplexity --follow-up <id> "Tell me more"              # follow-up query
+perplexity
 ```
 
 ### Slash commands
@@ -81,7 +65,6 @@ src/
   types.ts              Shared type definitions
   commands/
     chat.ts             Chat command (interactive REPL)
-    query.ts            Query command (one-shot question)
   api/
     perplexity.ts       Perplexity SDK client + error handling
   store/
