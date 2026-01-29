@@ -1,11 +1,12 @@
-import { createInterface } from "node:readline";
+import { createInterface, emitKeypressEvents } from "node:readline";
 import type { Conversation } from "../types.js";
 import type { Renderer } from "../ui/renderer.js";
 import type { PerplexityClient, SearchResult } from "../api/perplexity.js";
 import type { ConversationStore } from "../store/conversation.js";
 import { classifyApiError } from "../api/perplexity.js";
 
-const PASTE_DEBOUNCE_MS = 10;
+const PASTE_BRACKET_START = "\x1b[?2004h";
+const PASTE_BRACKET_END = "\x1b[?2004l";
 const PROMPT = "\u276F ";
 
 type SessionDeps = {
@@ -30,6 +31,20 @@ export function startSession(deps: SessionDeps): Promise<void> {
   const { client, store, renderer } = deps;
   let conversation = deps.conversation;
   let exitRequested = false;
+
+  // Enable bracketed paste mode
+  process.stdout.write(PASTE_BRACKET_START);
+
+  // Track paste state via keypress events
+  let isPasting = false;
+  emitKeypressEvents(process.stdin);
+  process.stdin.on("keypress", (_str: string | undefined, key: { name: string }) => {
+    if (key?.name === "paste-start") {
+      isPasting = true;
+    } else if (key?.name === "paste-end") {
+      isPasting = false;
+    }
+  });
 
   return new Promise<void>((resolve) => {
     const rl = createInterface({
@@ -186,12 +201,10 @@ export function startSession(deps: SessionDeps): Promise<void> {
     }
 
     let lineBuffer: string[] = [];
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     function flushLineBuffer(): void {
       const content = lineBuffer.join("\n").trim();
       lineBuffer = [];
-      debounceTimer = null;
 
       if (!content) {
         showPrompt();
@@ -209,18 +222,15 @@ export function startSession(deps: SessionDeps): Promise<void> {
     rl.on("line", (line: string) => {
       lineBuffer.push(line);
 
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
+      // Only submit when NOT in paste mode
+      // This means user pressed Enter (not a pasted newline)
+      if (!isPasting) {
+        flushLineBuffer();
       }
-
-      debounceTimer = setTimeout(flushLineBuffer, PASTE_DEBOUNCE_MS);
     });
 
     rl.on("close", () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-        debounceTimer = null;
-      }
+      process.stdout.write(PASTE_BRACKET_END);
       const goodbye = exitRequested ? "Goodbye!" : "\n\nGoodbye!";
       renderer.info(goodbye);
       resolve();

@@ -20,7 +20,7 @@ src/
   store/
     conversation.ts  → createConversationStore(): CRUD for conversation JSON files + index.json
   repl/
-    session.ts       → startSession(deps): readline loop, multi-line paste (10ms debounce),
+    session.ts       → startSession(deps): readline loop, multi-line paste (bracketed paste mode),
                        slash commands (/help, /list, /resume, /clear), deferred conversation creation
   ui/
     renderer.ts      → createRenderer(): streaming token output with markdown rendering
@@ -55,7 +55,7 @@ src/__tests__/
 - `npm run build` — compile TypeScript to `dist/`
 - `npm run dev` — watch mode
 - `npm start` — run `dist/index.js`
-- `npm test` / `npm run test:watch` — vitest (86 tests)
+- `npm test` / `npm run test:watch` — vitest (90 tests)
 
 Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 
@@ -68,7 +68,7 @@ TypeScript (ES2020, ESM), Node.js >=18, commander, @perplexity-ai/perplexity_ai 
 - Factory functions (`createX`) returning typed objects — no classes
 - Async generators for streaming API responses
 - Deferred conversation creation (conversation starts as `null`, created on first user message)
-- Multi-line paste via readline line-buffering with 10ms debounce
+- Multi-line paste via bracketed paste mode (terminal signals paste-start/paste-end)
 
 ## Conventions
 

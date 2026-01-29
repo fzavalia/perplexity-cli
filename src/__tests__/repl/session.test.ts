@@ -17,9 +17,38 @@ const mockRl = {
   emit: vi.fn(),
 };
 
+const mockStdin = {
+  on: vi.fn(),
+  setRawMode: vi.fn(),
+  isRaw: false,
+};
+
+const mockStdout = {
+  write: vi.fn(),
+};
+
 vi.mock("node:readline", () => ({
   createInterface: vi.fn(() => mockRl),
+  emitKeypressEvents: vi.fn(),
 }));
+
+type KeypressHandler = (str: string | undefined, key: { name: string }) => void;
+
+function getKeypressHandler(): KeypressHandler {
+  const call = mockStdin.on.mock.calls.find((c: unknown[]) => c[0] === "keypress");
+  if (!call) throw new Error("No keypress handler registered");
+  return call[1] as KeypressHandler;
+}
+
+function simulatePasteStart(): void {
+  const handler = getKeypressHandler();
+  handler(undefined, { name: "paste-start" });
+}
+
+function simulatePasteEnd(): void {
+  const handler = getKeypressHandler();
+  handler(undefined, { name: "paste-end" });
+}
 
 import { classifyApiError } from "../../api/perplexity.js";
 import { startSession } from "../../repl/session.js";
@@ -61,13 +90,19 @@ function renderer() {
 }
 
 describe("startSession", () => {
+  const originalStdin = process.stdin;
+  const originalStdout = process.stdout;
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     vi.spyOn(console, "log").mockImplementation(() => {});
+    // Mock process.stdin and process.stdout for bracketed paste mode
+    Object.defineProperty(process, "stdin", { value: mockStdin, writable: true });
+    Object.defineProperty(process, "stdout", { value: mockStdout, writable: true });
     // Re-wire mockRl.close to emit close event
     mockRl.close.mockImplementation(() => {
-      const closeHandler = getHandler("close");
+      const closeHandler = getHandler("close") as CloseHandler;
       closeHandler();
     });
   });
@@ -75,6 +110,8 @@ describe("startSession", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    Object.defineProperty(process, "stdin", { value: originalStdin, writable: true });
+    Object.defineProperty(process, "stdout", { value: originalStdout, writable: true });
   });
 
   describe("Init", () => {
@@ -118,7 +155,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hello");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(s.create).toHaveBeenCalledWith("hello");
     });
@@ -133,7 +170,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hello");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(s.addMessage).toHaveBeenCalledWith(conv, "user", "hello");
       expect(s.save).toHaveBeenCalled();
@@ -152,7 +189,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hi");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.assistantToken).toHaveBeenCalledWith("Hello");
       expect(r.assistantToken).toHaveBeenCalledWith(" world");
@@ -168,7 +205,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hi");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.assistantEnd).toHaveBeenCalled();
     });
@@ -192,7 +229,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hi");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.sources).toHaveBeenCalledWith([
         { title: "S1", url: "https://s1.com", index: 1 },
@@ -209,7 +246,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hi");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(s.addMessage).toHaveBeenCalledWith(conv, "assistant", "reply", []);
       expect(s.save).toHaveBeenCalledTimes(2);
@@ -225,7 +262,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hi");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(mockRl.pause).toHaveBeenCalled();
       expect(mockRl.resume).toHaveBeenCalled();
@@ -248,7 +285,7 @@ describe("startSession", () => {
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("hi");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(classifyApiError).toHaveBeenCalledWith(error);
       expect(r.error).toHaveBeenCalled();
@@ -256,8 +293,30 @@ describe("startSession", () => {
     });
   });
 
-  describe("Multi-line paste", () => {
-    it("joins rapid lines into single message", async () => {
+  describe("Multi-line paste (bracketed paste mode)", () => {
+    it("enables bracketed paste mode on start", () => {
+      const s = store();
+      const r = renderer();
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+
+      expect(mockStdout.write).toHaveBeenCalledWith("\x1b[?2004h");
+    });
+
+    it("disables bracketed paste mode on close", async () => {
+      const s = store();
+      const r = renderer();
+
+      const promise = startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/exit");
+      await vi.advanceTimersByTimeAsync(0);
+
+      await promise;
+      expect(mockStdout.write).toHaveBeenCalledWith("\x1b[?2004l");
+    });
+
+    it("buffers lines during paste, submits on Enter after paste ends", async () => {
       const s = store();
       const r = renderer();
       const conv = makeConversation();
@@ -266,12 +325,76 @@ describe("startSession", () => {
 
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
+
+      // Simulate paste start
+      simulatePasteStart();
+
+      // Lines during paste (pasted newlines)
       lineHandler("line1");
       lineHandler("line2");
       lineHandler("line3");
-      await vi.advanceTimersByTimeAsync(20);
+
+      // Nothing should be sent yet
+      expect(s.addMessage).not.toHaveBeenCalled();
+
+      // Simulate paste end
+      simulatePasteEnd();
+
+      // Still nothing sent (waiting for user to press Enter)
+      expect(s.addMessage).not.toHaveBeenCalled();
+
+      // User presses Enter (final line event after paste ends)
+      lineHandler("");
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(s.addMessage).toHaveBeenCalledWith(conv, "user", "line1\nline2\nline3");
+    });
+
+    it("submits immediately when user types and presses Enter (no paste)", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+      const client = createMockClient([{ type: "token", content: "ok" }]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+
+      // User types and presses Enter (no paste events)
+      lineHandler("hello");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(s.addMessage).toHaveBeenCalledWith(conv, "user", "hello");
+    });
+
+    it("allows continuing to type after paste before submitting", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+      const client = createMockClient([{ type: "token", content: "ok" }]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+
+      // Simulate paste
+      simulatePasteStart();
+      lineHandler("pasted line 1");
+      lineHandler("pasted line 2");
+      simulatePasteEnd();
+
+      // Nothing sent yet
+      expect(s.addMessage).not.toHaveBeenCalled();
+
+      // User continues typing and presses Enter
+      lineHandler("typed line");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(s.addMessage).toHaveBeenCalledWith(
+        conv,
+        "user",
+        "pasted line 1\npasted line 2\ntyped line"
+      );
     });
 
     it("single-line / is slash command", async () => {
@@ -281,7 +404,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/help");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.info).toHaveBeenCalledWith(expect.stringContaining("Available commands"));
     });
@@ -295,9 +418,16 @@ describe("startSession", () => {
 
       startSession({ client, store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
+
+      // Paste multi-line content starting with /
+      simulatePasteStart();
       lineHandler("/not a command");
       lineHandler("second line");
-      await vi.advanceTimersByTimeAsync(20);
+      simulatePasteEnd();
+
+      // User presses Enter
+      lineHandler("");
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(s.addMessage).toHaveBeenCalledWith(conv, "user", "/not a command\nsecond line");
     });
@@ -311,7 +441,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/help");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.info).toHaveBeenCalledWith(expect.stringContaining("/help"));
       expect(r.info).toHaveBeenCalledWith(expect.stringContaining("/exit"));
@@ -325,7 +455,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/list");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.info).toHaveBeenCalledWith("No conversations yet.");
     });
@@ -340,7 +470,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/list");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       const infoCall = r.info.mock.calls.find((c: unknown[]) =>
         (c[0] as string).includes("abc123")
@@ -362,7 +492,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/list");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       const infoCall = r.info.mock.calls.find((c: unknown[]) =>
         (c[0] as string).includes("id-0")
@@ -387,7 +517,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/resume conv-123");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(s.load).toHaveBeenCalledWith("conv-123");
       expect(r.assistantComplete).toHaveBeenCalledWith("a");
@@ -400,7 +530,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/resume");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.error).toHaveBeenCalledWith("Usage: /resume <id>");
     });
@@ -413,7 +543,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/resume bad-id");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.error).toHaveBeenCalledWith("Conversation not found: bad-id");
     });
@@ -426,15 +556,9 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: conv });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/clear");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.info).toHaveBeenCalledWith("Started new conversation.");
-
-      // After /clear, sending a message should create a new conversation
-      s.create.mockResolvedValue(makeConversation({ id: "new-conv" }));
-      const client2 = createMockClient([{ type: "token", content: "ok" }]);
-      // Need to re-test with a fresh client that has streamChat
-      // The key assertion is that info was called with the right message
     });
 
     it("/exit closes readline", async () => {
@@ -444,7 +568,7 @@ describe("startSession", () => {
       const promise = startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/exit");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       await promise;
       expect(r.info).toHaveBeenCalledWith("Goodbye!");
@@ -457,7 +581,7 @@ describe("startSession", () => {
       startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/unknown");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(r.error).toHaveBeenCalledWith("Unknown command: /unknown");
     });
@@ -471,7 +595,7 @@ describe("startSession", () => {
       const promise = startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/exit");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       await expect(promise).resolves.toBeUndefined();
     });
@@ -483,7 +607,7 @@ describe("startSession", () => {
       const promise = startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
       const lineHandler = getHandler("line") as LineHandler;
       lineHandler("/exit");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       await promise;
       expect(r.info).toHaveBeenCalledWith("Goodbye!");
@@ -514,7 +638,7 @@ describe("startSession", () => {
       const lineHandler = getHandler("line") as LineHandler;
       mockRl.prompt.mockClear();
       lineHandler("");
-      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(s.create).not.toHaveBeenCalled();
       expect(mockRl.prompt).toHaveBeenCalled();

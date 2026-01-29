@@ -9,7 +9,7 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 - Streaming responses from Perplexity's `sonar-pro` model
 - Source citations displayed after each response
 - Conversation history saved locally
-- Multi-line paste support
+- Multi-line paste support (bracketed paste mode)
 - Slash commands: `/help`, `/list`, `/resume`, `/clear`
 
 ## Requirements
