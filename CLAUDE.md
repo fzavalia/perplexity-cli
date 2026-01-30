@@ -22,7 +22,7 @@ src/
     conversation.ts  → createConversationStore(): CRUD for conversation JSON files + index.json
   repl/
     session.ts       → startSession(deps): readline loop, multi-line paste (bracketed paste mode),
-                       slash commands (/help, /list, /resume, /clear), deferred conversation creation
+                       slash commands (/help, /list, /resume, /delete, /copy, /clear), deferred conversation creation
   ui/
     renderer.ts      → createRenderer(): streaming token output with markdown rendering
                        (marked + marked-terminal), color support for sources/errors/info

@@ -1,4 +1,5 @@
 import { createInterface, emitKeypressEvents } from "node:readline";
+import clipboard from "clipboardy";
 import type { Conversation } from "../types.js";
 import type { Renderer } from "../ui/renderer.js";
 import type { PerplexityClient, SearchResult } from "../api/perplexity.js";
@@ -25,6 +26,7 @@ const HELP_TEXT = `Available commands:
   /list         List saved conversations
   /resume <id>  Resume a saved conversation
   /delete <id>  Delete a saved conversation
+  /copy         Copy last response to clipboard
   /clear        Start a new conversation
   /exit         Exit the application`;
 
@@ -132,6 +134,9 @@ export function startSession(deps: SessionDeps): Promise<void> {
             showPrompt();
           });
           return;
+        case "/copy":
+          handleCopy();
+          return;
         case "/clear":
           conversation = null;
           renderer.info("Started new conversation.");
@@ -219,6 +224,28 @@ export function startSession(deps: SessionDeps): Promise<void> {
       } catch (error) {
         renderer.error(`Failed to list conversations: ${error}`);
       }
+      showPrompt();
+    }
+
+    function handleCopy(): void {
+      if (!conversation || conversation.messages.length === 0) {
+        renderer.error("No conversation yet.");
+        showPrompt();
+        return;
+      }
+
+      const lastAssistant = [...conversation.messages]
+        .reverse()
+        .find((m) => m.role === "assistant");
+
+      if (!lastAssistant) {
+        renderer.error("No assistant response to copy.");
+        showPrompt();
+        return;
+      }
+
+      clipboard.writeSync(lastAssistant.content);
+      renderer.info("Response copied to clipboard.");
       showPrompt();
     }
 

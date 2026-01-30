@@ -8,6 +8,12 @@ vi.mock("../../api/perplexity.js", async (importOriginal) => {
   return { ...original, classifyApiError: vi.fn((e: unknown) => `classified: ${e}`) };
 });
 
+vi.mock("clipboardy", () => ({
+  default: {
+    writeSync: vi.fn(),
+  },
+}));
+
 const mockRl = {
   prompt: vi.fn(),
   close: vi.fn(),
@@ -52,6 +58,7 @@ function simulatePasteEnd(): void {
 
 import { classifyApiError } from "../../api/perplexity.js";
 import { startSession } from "../../repl/session.js";
+import clipboard from "clipboardy";
 
 function makeConversation(overrides: Partial<Conversation> = {}): Conversation {
   return {
@@ -657,6 +664,88 @@ describe("startSession", () => {
       await vi.advanceTimersByTimeAsync(0);
 
       expect(r.info).toHaveBeenCalledWith(expect.stringContaining("/delete"));
+    });
+
+    it("/copy copies last assistant response to clipboard", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation({
+        messages: [
+          { id: "1", role: "user", content: "hello", createdAt: "2024-01-01T00:00:00Z", sources: [] },
+          { id: "2", role: "assistant", content: "hi there", createdAt: "2024-01-01T00:00:01Z", sources: [] },
+        ],
+      });
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: conv });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/copy");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(clipboard.writeSync).toHaveBeenCalledWith("hi there");
+      expect(r.info).toHaveBeenCalledWith("Response copied to clipboard.");
+    });
+
+    it("/copy shows error when no conversation exists", async () => {
+      const s = store();
+      const r = renderer();
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/copy");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(clipboard.writeSync).not.toHaveBeenCalled();
+      expect(r.error).toHaveBeenCalledWith("No conversation yet.");
+    });
+
+    it("/copy shows error when no assistant response exists", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation({
+        messages: [
+          { id: "1", role: "user", content: "hello", createdAt: "2024-01-01T00:00:00Z", sources: [] },
+        ],
+      });
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: conv });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/copy");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(clipboard.writeSync).not.toHaveBeenCalled();
+      expect(r.error).toHaveBeenCalledWith("No assistant response to copy.");
+    });
+
+    it("/copy copies most recent assistant response when multiple exist", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation({
+        messages: [
+          { id: "1", role: "user", content: "first question", createdAt: "2024-01-01T00:00:00Z", sources: [] },
+          { id: "2", role: "assistant", content: "first answer", createdAt: "2024-01-01T00:00:01Z", sources: [] },
+          { id: "3", role: "user", content: "second question", createdAt: "2024-01-01T00:00:02Z", sources: [] },
+          { id: "4", role: "assistant", content: "second answer", createdAt: "2024-01-01T00:00:03Z", sources: [] },
+        ],
+      });
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: conv });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/copy");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(clipboard.writeSync).toHaveBeenCalledWith("second answer");
+    });
+
+    it("/help shows copy command", async () => {
+      const s = store();
+      const r = renderer();
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/help");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(r.info).toHaveBeenCalledWith(expect.stringContaining("/copy"));
     });
   });
 
