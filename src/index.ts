@@ -4,9 +4,21 @@ import { createRequire } from "node:module";
 import { program } from "commander";
 import { runChat } from "./commands/chat.js";
 import { runDirectQuery } from "./commands/directQuery.js";
+import { readStdinIfPiped } from "./utils/stdin.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
+
+export function mergeStdinAndQuestion(
+  stdinContent: string,
+  question: string
+): string {
+  const trimmedStdin = stdinContent.trim();
+  if (trimmedStdin && question) {
+    return `${trimmedStdin}\n\n${question}`;
+  }
+  return trimmedStdin || question;
+}
 
 program
   .name("perplexity")
@@ -23,9 +35,12 @@ program
       questionParts: string[],
       options: { plain?: boolean; model?: string }
     ) => {
-      const question = questionParts?.join(" ");
-      if (question) {
-        await runDirectQuery(question, {
+      const stdinContent = await readStdinIfPiped();
+      const questionArg = questionParts?.join(" ") || "";
+      const fullContent = mergeStdinAndQuestion(stdinContent, questionArg);
+
+      if (fullContent) {
+        await runDirectQuery(fullContent, {
           plain: options.plain,
           model: options.model,
         });

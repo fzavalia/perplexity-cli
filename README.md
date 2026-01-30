@@ -52,6 +52,22 @@ perplexity "What is TypeScript?"
 
 The answer is printed and the program exits. Useful for scripting and quick lookups.
 
+### Piped input
+
+Pipe content from other commands for contextual queries:
+
+```bash
+cat error.log | perplexity "explain this error"
+git diff | perplexity "review these changes"
+echo "SELECT * FROM users" | perplexity "optimize this query"
+```
+
+Piped content is combined with your question. If no question is provided, the piped content itself becomes the query:
+
+```bash
+cat README.md | perplexity  # asks about the file contents
+```
+
 ### Plain output mode
 
 Disable colors and markdown formatting for piping to other tools:

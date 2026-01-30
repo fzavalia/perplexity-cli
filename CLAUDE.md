@@ -10,7 +10,7 @@ Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models. 
 
 ```
 src/
-  index.ts           → CLI entry (shebang), commander setup, routes to runChat or runDirectQuery
+  index.ts           → CLI entry (shebang), commander setup, stdin reading, routes to runChat or runDirectQuery
   types.ts           → shared types: Message, Conversation, ConversationSummary
   commands/
     chat.ts          → runChat(): validates PERPLEXITY_API_KEY, wires deps, starts session
@@ -27,6 +27,8 @@ src/
   ui/
     renderer.ts      → createRenderer(): streaming token output with markdown rendering
                        (marked + marked-terminal), color support for sources/errors/info
+  utils/
+    stdin.ts         → readStdinIfPiped(): reads piped input when stdin is not a TTY
 ```
 
 Data lives in `~/.perplexity-cli/conversations/` — each conversation as `<id>.json` with an `index.json` for fast listing.
