@@ -10,10 +10,11 @@ Perplexity CLI — a TypeScript terminal interface to Perplexity's chat models. 
 
 ```
 src/
-  index.ts           → CLI entry (shebang), commander setup, runs runChat
+  index.ts           → CLI entry (shebang), commander setup, routes to runChat or runDirectQuery
   types.ts           → shared types: Message, Conversation, ConversationSummary
   commands/
     chat.ts          → runChat(): validates PERPLEXITY_API_KEY, wires deps, starts session
+    directQuery.ts   → runDirectQuery(question): one-shot query, streams response, exits
   api/
     perplexity.ts    → createPerplexityClient(apiKey): streamChat async generator via OpenAI SDK
                        classifyApiError(): maps errors to user-friendly messages
@@ -42,6 +43,7 @@ src/__tests__/
     perplexity-client.test.ts → streamChat tests (mocked SDK)
   commands/
     chat.test.ts              → runChat tests (mocked deps)
+    directQuery.test.ts       → runDirectQuery tests (mocked deps)
   repl/
     session.test.ts           → startSession tests (mocked readline, fake timers)
   store/
@@ -55,7 +57,7 @@ src/__tests__/
 - `npm run build` — compile TypeScript to `dist/`
 - `npm run dev` — watch mode
 - `npm start` — run `dist/index.js`
-- `npm test` / `npm run test:watch` — vitest (90 tests)
+- `npm test` / `npm run test:watch` — vitest
 
 Auth: `export PERPLEXITY_API_KEY=<key>` (read from env, no config file).
 

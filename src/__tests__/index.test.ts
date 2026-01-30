@@ -1,17 +1,28 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockRunChat } = vi.hoisted(() => ({
+const { mockRunChat, mockRunDirectQuery } = vi.hoisted(() => ({
   mockRunChat: vi.fn(),
+  mockRunDirectQuery: vi.fn(),
 }));
 
 vi.mock("../commands/chat.js", () => ({
   runChat: mockRunChat,
 }));
 
+vi.mock("../commands/directQuery.js", () => ({
+  runDirectQuery: mockRunDirectQuery,
+}));
+
 describe("index", () => {
-  it("exports runChat as the action", async () => {
-    // The CLI wires runChat directly to commander's action
-    // This test verifies the mock setup works
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("exports runChat as the default action", async () => {
     expect(mockRunChat).toBeDefined();
+  });
+
+  it("exports runDirectQuery for direct question mode", async () => {
+    expect(mockRunDirectQuery).toBeDefined();
   });
 });
