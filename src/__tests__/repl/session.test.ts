@@ -585,6 +585,79 @@ describe("startSession", () => {
 
       expect(r.error).toHaveBeenCalledWith("Unknown command: /unknown");
     });
+
+    it("/delete calls store.delete with id", async () => {
+      const s = store();
+      const r = renderer();
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/delete abc123");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(s.delete).toHaveBeenCalledWith("abc123");
+      expect(r.info).toHaveBeenCalledWith("Conversation deleted.");
+    });
+
+    it("/delete without id shows usage error", async () => {
+      const s = store();
+      const r = renderer();
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/delete");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(s.delete).not.toHaveBeenCalled();
+      expect(r.error).toHaveBeenCalledWith("Usage: /delete <id>");
+    });
+
+    it("/delete current conversation clears state", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation({ id: "current-conv" });
+      s.create.mockResolvedValue(conv);
+      const client = createMockClient([{ type: "token", content: "ok" }]);
+
+      startSession({ client, store: s, renderer: r, conversation: conv });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/delete current-conv");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(r.info).toHaveBeenCalledWith("Conversation deleted.");
+
+      // Sending a new message should create a new conversation
+      s.create.mockClear();
+      lineHandler("hello");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(s.create).toHaveBeenCalledWith("hello");
+    });
+
+    it("/delete shows error on failure", async () => {
+      const s = store();
+      const r = renderer();
+      s.delete.mockRejectedValue(new Error("Conversation not found: bad-id"));
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/delete bad-id");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(r.error).toHaveBeenCalledWith("Error: Conversation not found: bad-id");
+    });
+
+    it("/help shows delete command", async () => {
+      const s = store();
+      const r = renderer();
+
+      startSession({ client: createMockClient(), store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("/help");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(r.info).toHaveBeenCalledWith(expect.stringContaining("/delete"));
+    });
   });
 
   describe("Close", () => {

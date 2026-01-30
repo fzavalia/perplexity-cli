@@ -11,7 +11,7 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 - Conversation history saved locally
 - Multi-line paste support (bracketed paste mode)
 - Direct question mode for one-shot queries
-- Slash commands: `/help`, `/list`, `/resume`, `/clear`
+- Slash commands: `/help`, `/list`, `/resume`, `/delete`, `/clear`
 
 ## Requirements
 
@@ -65,6 +65,7 @@ perplexity
 | `/help`        | Show available commands         |
 | `/list`        | List saved conversations        |
 | `/resume <id>` | Resume a saved conversation     |
+| `/delete <id>` | Delete a saved conversation     |
 | `/clear`       | Start a new conversation        |
 | `/exit`        | Exit the application            |
 

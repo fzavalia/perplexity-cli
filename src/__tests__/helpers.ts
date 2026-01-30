@@ -37,6 +37,7 @@ export function createMockStore(): {
     create: vi.fn(),
     load: vi.fn(),
     save: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
     addMessage: vi.fn().mockReturnValue({
       id: "msg-1",
       role: "user",

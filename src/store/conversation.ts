@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { nanoid } from "nanoid";
@@ -14,6 +14,7 @@ export type ConversationStore = {
   create(firstMessage: string): Promise<Conversation>;
   load(id: string): Promise<Conversation>;
   save(conversation: Conversation): Promise<void>;
+  delete(id: string): Promise<void>;
   addMessage(
     conversation: Conversation,
     role: "user" | "assistant",
@@ -157,6 +158,23 @@ export function createConversationStore(
         JSON.stringify(conversation, null, 2)
       );
       await updateIndex(conversation);
+    },
+
+    async delete(id: string) {
+      validateId(id);
+      try {
+        await unlink(conversationPath(id));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+          throw new Error(`Conversation not found: ${id}`);
+        }
+        throw error;
+      }
+      await withIndexLock(async () => {
+        const summaries = await readIndex();
+        const filtered = summaries.filter((s) => s.id !== id);
+        await writeIndex(filtered);
+      });
     },
 
     addMessage(conversation, role, content, sources = []) {

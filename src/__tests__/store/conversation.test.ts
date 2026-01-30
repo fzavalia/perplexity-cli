@@ -258,3 +258,47 @@ describe("index lock", () => {
     expect(ids).toEqual([conv1.id, conv2.id].sort());
   });
 });
+
+describe("delete", () => {
+  beforeEach(async () => {
+    await store.ensureDirectory();
+  });
+
+  it("deletes conversation file", async () => {
+    const conv = await store.create("Test");
+    await store.delete(conv.id);
+    await expect(readFile(join(tempDir, `${conv.id}.json`), "utf-8")).rejects.toThrow();
+  });
+
+  it("removes entry from index", async () => {
+    const conv = await store.create("Test");
+    await store.delete(conv.id);
+    const summaries = await store.listSummaries();
+    expect(summaries).toHaveLength(0);
+  });
+
+  it("throws on non-existent id", async () => {
+    await expect(store.delete("nonexistent")).rejects.toThrow("Conversation not found");
+  });
+
+  it("throws on invalid id with path traversal", async () => {
+    await expect(store.delete("../etc/passwd")).rejects.toThrow("Invalid conversation id");
+  });
+
+  it("throws on invalid id with slash", async () => {
+    await expect(store.delete("/etc/passwd")).rejects.toThrow("Invalid conversation id");
+  });
+
+  it("throws on invalid id with backslash", async () => {
+    await expect(store.delete("..\\etc")).rejects.toThrow("Invalid conversation id");
+  });
+
+  it("only removes target from index with multiple conversations", async () => {
+    const conv1 = await store.create("First");
+    const conv2 = await store.create("Second");
+    await store.delete(conv1.id);
+    const summaries = await store.listSummaries();
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0].id).toBe(conv2.id);
+  });
+});

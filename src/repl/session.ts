@@ -24,6 +24,7 @@ const HELP_TEXT = `Available commands:
   /help         Show this help message
   /list         List saved conversations
   /resume <id>  Resume a saved conversation
+  /delete <id>  Delete a saved conversation
   /clear        Start a new conversation
   /exit         Exit the application`;
 
@@ -125,6 +126,12 @@ export function startSession(deps: SessionDeps): Promise<void> {
             showPrompt();
           });
           return;
+        case "/delete":
+          handleDelete(args[0]).catch((e) => {
+            renderer.error(String(e));
+            showPrompt();
+          });
+          return;
         case "/clear":
           conversation = null;
           renderer.info("Started new conversation.");
@@ -169,6 +176,21 @@ export function startSession(deps: SessionDeps): Promise<void> {
       } catch {
         renderer.error(`Conversation not found: ${id}`);
       }
+      showPrompt();
+    }
+
+    async function handleDelete(id: string | undefined): Promise<void> {
+      if (!id) {
+        renderer.error("Usage: /delete <id>");
+        showPrompt();
+        return;
+      }
+
+      await store.delete(id);
+      if (conversation?.id === id) {
+        conversation = null;
+      }
+      renderer.info("Conversation deleted.");
       showPrompt();
     }
 
