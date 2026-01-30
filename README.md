@@ -6,11 +6,12 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 
 ## Features
 
-- Streaming responses from Perplexity's `sonar-pro` model
+- Streaming responses from Perplexity models (sonar, sonar-pro, sonar-reasoning-pro, sonar-deep-research)
 - Source citations displayed after each response
 - Conversation history saved locally
 - Multi-line paste support (bracketed paste mode)
 - Direct question mode for one-shot queries
+- Model selection via `--model` flag
 - Slash commands: `/help`, `/list`, `/resume`, `/delete`, `/copy`, `/clear`
 
 ## Requirements
@@ -59,6 +60,26 @@ Disable colors and markdown formatting for piping to other tools:
 perplexity --plain "What is TypeScript?" | cat
 perplexity -p "Explain async/await" > answer.txt
 ```
+
+Works with both direct queries and interactive mode.
+
+### Model selection
+
+Choose a different Perplexity model:
+
+```bash
+perplexity --model sonar "Quick question"
+perplexity -m sonar-reasoning-pro "Complex reasoning task"
+```
+
+Available models:
+
+| Model | Description |
+|-------|-------------|
+| `sonar` | Fastest, cheapest ($1/1M tokens) |
+| `sonar-pro` | Default, larger context (200k) |
+| `sonar-reasoning-pro` | Better for complex reasoning |
+| `sonar-deep-research` | In-depth research queries |
 
 Works with both direct queries and interactive mode.
 

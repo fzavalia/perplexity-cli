@@ -11,7 +11,7 @@ vi.mock("@perplexity-ai/perplexity_ai", () => ({
 }));
 
 import Perplexity from "@perplexity-ai/perplexity_ai";
-import { createPerplexityClient } from "../../api/perplexity.js";
+import { createPerplexityClient, isValidModel, VALID_MODELS } from "../../api/perplexity.js";
 
 function makeChunk(content: string | null, searchResults?: { title: string; url: string }[]) {
   return {
@@ -25,6 +25,31 @@ async function* asyncIterableFrom<T>(items: T[]): AsyncGenerator<T> {
     yield item;
   }
 }
+
+describe("isValidModel", () => {
+  it("returns true for valid models", () => {
+    expect(isValidModel("sonar")).toBe(true);
+    expect(isValidModel("sonar-pro")).toBe(true);
+    expect(isValidModel("sonar-reasoning-pro")).toBe(true);
+    expect(isValidModel("sonar-deep-research")).toBe(true);
+  });
+
+  it("returns false for invalid models", () => {
+    expect(isValidModel("invalid-model")).toBe(false);
+    expect(isValidModel("")).toBe(false);
+    expect(isValidModel("sonar-small")).toBe(false);
+  });
+});
+
+describe("VALID_MODELS", () => {
+  it("contains expected models", () => {
+    expect(VALID_MODELS).toContain("sonar");
+    expect(VALID_MODELS).toContain("sonar-pro");
+    expect(VALID_MODELS).toContain("sonar-reasoning-pro");
+    expect(VALID_MODELS).toContain("sonar-deep-research");
+    expect(VALID_MODELS).toHaveLength(4);
+  });
+});
 
 describe("createPerplexityClient", () => {
   beforeEach(() => {
@@ -109,6 +134,24 @@ describe("createPerplexityClient", () => {
           { role: "assistant", content: "Hi" },
         ],
       });
+    });
+
+    it("uses default model (sonar-pro) when not specified", async () => {
+      mockCreate.mockResolvedValue(asyncIterableFrom([]));
+      const client = createPerplexityClient("key");
+      await collectEvents(client.streamChat([]));
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ model: "sonar-pro" })
+      );
+    });
+
+    it("uses specified model when provided", async () => {
+      mockCreate.mockResolvedValue(asyncIterableFrom([]));
+      const client = createPerplexityClient("key", "sonar-reasoning-pro");
+      await collectEvents(client.streamChat([]));
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ model: "sonar-reasoning-pro" })
+      );
     });
 
     it("maps only role+content, strips id and createdAt", async () => {

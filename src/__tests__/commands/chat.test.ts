@@ -5,15 +5,18 @@ const {
   mockCreateConversationStore,
   mockCreateRenderer,
   mockStartSession,
+  mockIsValidModel,
 } = vi.hoisted(() => ({
   mockCreatePerplexityClient: vi.fn(),
   mockCreateConversationStore: vi.fn(),
   mockCreateRenderer: vi.fn(),
   mockStartSession: vi.fn(),
+  mockIsValidModel: vi.fn(),
 }));
 
 vi.mock("../../api/perplexity.js", () => ({
   createPerplexityClient: mockCreatePerplexityClient,
+  isValidModel: mockIsValidModel,
 }));
 
 vi.mock("../../store/conversation.js", () => ({
@@ -64,6 +67,7 @@ describe("runChat", () => {
     mockCreateRenderer.mockReturnValue(mockRendererObj);
     mockCreatePerplexityClient.mockReturnValue(mockClient);
     mockStartSession.mockResolvedValue(undefined);
+    mockIsValidModel.mockReturnValue(true);
 
     exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
@@ -91,7 +95,7 @@ describe("runChat", () => {
 
   it("creates client with API key", async () => {
     await runChat();
-    expect(mockCreatePerplexityClient).toHaveBeenCalledWith("test-key");
+    expect(mockCreatePerplexityClient).toHaveBeenCalledWith("test-key", undefined);
   });
 
   it("creates store and ensures directory", async () => {
@@ -123,5 +127,34 @@ describe("runChat", () => {
   it("defaults to no plain option when not specified", async () => {
     await runChat();
     expect(mockCreateRenderer).toHaveBeenCalledWith({});
+  });
+
+  it("passes model option to client factory", async () => {
+    await runChat({ model: "sonar-reasoning-pro" });
+    expect(mockCreatePerplexityClient).toHaveBeenCalledWith(
+      "test-key",
+      "sonar-reasoning-pro"
+    );
+  });
+
+  it("creates client without model when not specified", async () => {
+    await runChat();
+    expect(mockCreatePerplexityClient).toHaveBeenCalledWith("test-key", undefined);
+  });
+
+  it("validates model and exits on invalid model", async () => {
+    mockIsValidModel.mockReturnValue(false);
+    await expect(runChat({ model: "invalid-model" })).rejects.toThrow(
+      "process.exit"
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid model")
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it("skips validation when no model specified", async () => {
+    await runChat();
+    expect(mockIsValidModel).not.toHaveBeenCalled();
   });
 });

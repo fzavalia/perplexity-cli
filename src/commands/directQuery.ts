@@ -1,6 +1,7 @@
 import {
   createPerplexityClient,
   classifyApiError,
+  isValidModel,
   type SearchResult,
 } from "../api/perplexity.js";
 import { createRenderer } from "../ui/renderer.js";
@@ -9,6 +10,7 @@ import { nanoid } from "nanoid";
 
 export type DirectQueryOptions = {
   plain?: boolean;
+  model?: string;
 };
 
 export async function runDirectQuery(
@@ -24,7 +26,15 @@ export async function runDirectQuery(
     process.exit(1);
   }
 
-  const client = createPerplexityClient(apiKey);
+  if (options.model && !isValidModel(options.model)) {
+    console.error(`Invalid model: ${options.model}`);
+    console.error(
+      "Valid models: sonar, sonar-pro, sonar-reasoning-pro, sonar-deep-research"
+    );
+    process.exit(1);
+  }
+
+  const client = createPerplexityClient(apiKey, options.model);
   const renderer = createRenderer({ plain: options.plain });
 
   const userMessage: Message = {

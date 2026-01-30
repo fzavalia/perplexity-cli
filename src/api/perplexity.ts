@@ -1,7 +1,17 @@
 import Perplexity from "@perplexity-ai/perplexity_ai";
 import type { Message } from "../types.js";
 
-const MODEL = "sonar-pro";
+const DEFAULT_MODEL = "sonar-pro";
+export const VALID_MODELS = [
+  "sonar",
+  "sonar-pro",
+  "sonar-reasoning-pro",
+  "sonar-deep-research",
+] as const;
+
+export function isValidModel(model: string): boolean {
+  return (VALID_MODELS as readonly string[]).includes(model);
+}
 
 export type SearchResult = {
   title: string;
@@ -18,13 +28,16 @@ export type PerplexityClient = {
   ): AsyncGenerator<StreamEvent, void, undefined>;
 };
 
-export function createPerplexityClient(apiKey: string): PerplexityClient {
+export function createPerplexityClient(
+  apiKey: string,
+  model: string = DEFAULT_MODEL
+): PerplexityClient {
   const client = new Perplexity({ apiKey });
 
   return {
     async *streamChat(messages) {
       const stream = await client.chat.completions.create({
-        model: MODEL,
+        model,
         stream: true,
         messages: messages.map((m) => ({
           role: m.role,

@@ -13,14 +13,26 @@ program
   .description("Terminal interface to Perplexity chat models")
   .version(version)
   .option("-p, --plain", "Disable colors and markdown formatting")
+  .option(
+    "-m, --model <model>",
+    "Model to use (sonar, sonar-pro, sonar-reasoning-pro, sonar-deep-research)"
+  )
   .argument("[question...]", "Ask a question directly without entering REPL")
-  .action(async (questionParts: string[], options: { plain?: boolean }) => {
-    const question = questionParts?.join(" ");
-    if (question) {
-      await runDirectQuery(question, { plain: options.plain });
-    } else {
-      await runChat({ plain: options.plain });
+  .action(
+    async (
+      questionParts: string[],
+      options: { plain?: boolean; model?: string }
+    ) => {
+      const question = questionParts?.join(" ");
+      if (question) {
+        await runDirectQuery(question, {
+          plain: options.plain,
+          model: options.model,
+        });
+      } else {
+        await runChat({ plain: options.plain, model: options.model });
+      }
     }
-  });
+  );
 
 program.parse();

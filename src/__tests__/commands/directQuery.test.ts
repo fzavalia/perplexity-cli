@@ -4,15 +4,18 @@ const {
   mockCreatePerplexityClient,
   mockCreateRenderer,
   mockClassifyApiError,
+  mockIsValidModel,
 } = vi.hoisted(() => ({
   mockCreatePerplexityClient: vi.fn(),
   mockCreateRenderer: vi.fn(),
   mockClassifyApiError: vi.fn(),
+  mockIsValidModel: vi.fn(),
 }));
 
 vi.mock("../../api/perplexity.js", () => ({
   createPerplexityClient: mockCreatePerplexityClient,
   classifyApiError: mockClassifyApiError,
+  isValidModel: mockIsValidModel,
 }));
 
 vi.mock("../../ui/renderer.js", () => ({
@@ -72,6 +75,7 @@ describe("runDirectQuery", () => {
     mockCreateRenderer.mockReturnValue(mockRenderer);
     mockCreatePerplexityClient.mockReturnValue(mockClient);
     mockClient.streamChat.mockReturnValue(generateTokens([]));
+    mockIsValidModel.mockReturnValue(true);
 
     exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
@@ -101,7 +105,7 @@ describe("runDirectQuery", () => {
 
   it("creates client with API key", async () => {
     await runDirectQuery("test question");
-    expect(mockCreatePerplexityClient).toHaveBeenCalledWith("test-key");
+    expect(mockCreatePerplexityClient).toHaveBeenCalledWith("test-key", undefined);
   });
 
   it("creates renderer", async () => {
@@ -216,5 +220,34 @@ describe("runDirectQuery", () => {
   it("defaults to no plain option when not specified", async () => {
     await runDirectQuery("test question");
     expect(mockCreateRenderer).toHaveBeenCalledWith({});
+  });
+
+  it("passes model option to client factory", async () => {
+    await runDirectQuery("test question", { model: "sonar-reasoning-pro" });
+    expect(mockCreatePerplexityClient).toHaveBeenCalledWith(
+      "test-key",
+      "sonar-reasoning-pro"
+    );
+  });
+
+  it("creates client without model when not specified", async () => {
+    await runDirectQuery("test question");
+    expect(mockCreatePerplexityClient).toHaveBeenCalledWith("test-key", undefined);
+  });
+
+  it("validates model and exits on invalid model", async () => {
+    mockIsValidModel.mockReturnValue(false);
+    await expect(
+      runDirectQuery("test question", { model: "invalid-model" })
+    ).rejects.toThrow("process.exit");
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid model")
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it("skips validation when no model specified", async () => {
+    await runDirectQuery("test question");
+    expect(mockIsValidModel).not.toHaveBeenCalled();
   });
 });

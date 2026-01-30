@@ -16,8 +16,9 @@ src/
     chat.ts          → runChat(): validates PERPLEXITY_API_KEY, wires deps, starts session
     directQuery.ts   → runDirectQuery(question): one-shot query, streams response, exits
   api/
-    perplexity.ts    → createPerplexityClient(apiKey): streamChat async generator via OpenAI SDK
+    perplexity.ts    → createPerplexityClient(apiKey, model?): streamChat async generator via OpenAI SDK
                        classifyApiError(): maps errors to user-friendly messages
+                       isValidModel(): validates model against VALID_MODELS constant
   store/
     conversation.ts  → createConversationStore(): CRUD for conversation JSON files + index.json
   repl/
