@@ -12,13 +12,14 @@ program
   .name("perplexity")
   .description("Terminal interface to Perplexity chat models")
   .version(version)
+  .option("-p, --plain", "Disable colors and markdown formatting")
   .argument("[question...]", "Ask a question directly without entering REPL")
-  .action(async (questionParts: string[]) => {
+  .action(async (questionParts: string[], options: { plain?: boolean }) => {
     const question = questionParts?.join(" ");
     if (question) {
-      await runDirectQuery(question);
+      await runDirectQuery(question, { plain: options.plain });
     } else {
-      await runChat();
+      await runChat({ plain: options.plain });
     }
   });
 

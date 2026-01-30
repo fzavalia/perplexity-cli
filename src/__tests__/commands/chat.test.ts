@@ -114,4 +114,14 @@ describe("runChat", () => {
       conversation: null,
     });
   });
+
+  it("passes plain option to renderer", async () => {
+    await runChat({ plain: true });
+    expect(mockCreateRenderer).toHaveBeenCalledWith({ plain: true });
+  });
+
+  it("defaults to no plain option when not specified", async () => {
+    await runChat();
+    expect(mockCreateRenderer).toHaveBeenCalledWith({});
+  });
 });

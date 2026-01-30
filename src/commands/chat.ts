@@ -3,7 +3,11 @@ import { createConversationStore } from "../store/conversation.js";
 import { createRenderer } from "../ui/renderer.js";
 import { startSession } from "../repl/session.js";
 
-export async function runChat(): Promise<void> {
+export type ChatOptions = {
+  plain?: boolean;
+};
+
+export async function runChat(options: ChatOptions = {}): Promise<void> {
   const apiKey = process.env["PERPLEXITY_API_KEY"];
 
   if (!apiKey) {
@@ -15,7 +19,7 @@ export async function runChat(): Promise<void> {
 
   const client = createPerplexityClient(apiKey);
   const store = createConversationStore();
-  const renderer = createRenderer();
+  const renderer = createRenderer({ plain: options.plain });
 
   await store.ensureDirectory();
 

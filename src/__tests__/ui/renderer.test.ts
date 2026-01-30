@@ -16,6 +16,71 @@ afterEach(() => {
 });
 
 describe("createRenderer", () => {
+  describe("plain mode", () => {
+    describe("assistantToken", () => {
+      it("writes raw token without first-token newline", () => {
+        const r = createRenderer({ plain: true });
+        r.assistantToken("hello");
+        expect(stdoutWriteSpy).toHaveBeenCalledWith("hello");
+        expect(stdoutWriteSpy).not.toHaveBeenCalledWith("\n");
+      });
+
+      it("writes subsequent tokens directly", () => {
+        const r = createRenderer({ plain: true });
+        r.assistantToken("a");
+        r.assistantToken("b");
+        expect(stdoutWriteSpy).toHaveBeenCalledWith("a");
+        expect(stdoutWriteSpy).toHaveBeenCalledWith("b");
+      });
+    });
+
+    describe("assistantEnd", () => {
+      it("outputs newline without ANSI clearing", () => {
+        const r = createRenderer({ plain: true });
+        r.assistantToken("hello");
+        stdoutWriteSpy.mockClear();
+        r.assistantEnd();
+        expect(stdoutWriteSpy).toHaveBeenCalledWith("\n");
+        expect(stdoutWriteSpy).not.toHaveBeenCalledWith(
+          expect.stringContaining("\x1b")
+        );
+      });
+    });
+
+    describe("assistantComplete", () => {
+      it("outputs raw content without markdown rendering", () => {
+        const r = createRenderer({ plain: true });
+        r.assistantComplete("**bold**");
+        expect(stdoutWriteSpy).toHaveBeenCalledWith("**bold**\n");
+      });
+    });
+
+    describe("sources", () => {
+      it("displays plain text without colors", () => {
+        const r = createRenderer({ plain: true });
+        r.sources([{ index: 1, title: "T", url: "https://x.com" }]);
+        expect(consoleLogSpy).toHaveBeenCalledWith("[1] https://x.com");
+      });
+    });
+
+    describe("error", () => {
+      it("displays error without chalk.red", () => {
+        const r = createRenderer({ plain: true });
+        r.error("bad thing");
+        expect(consoleErrorSpy).toHaveBeenCalledWith("bad thing");
+      });
+    });
+
+    describe("info", () => {
+      it("displays info without chalk.dim", () => {
+        const r = createRenderer({ plain: true });
+        r.info("some info");
+        expect(consoleLogSpy).toHaveBeenCalledWith("some info");
+      });
+    });
+  });
+
+
   describe("assistantToken", () => {
     it("writes newline on first token", () => {
       const r = createRenderer();

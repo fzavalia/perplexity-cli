@@ -51,6 +51,17 @@ perplexity "What is TypeScript?"
 
 The answer is printed and the program exits. Useful for scripting and quick lookups.
 
+### Plain output mode
+
+Disable colors and markdown formatting for piping to other tools:
+
+```bash
+perplexity --plain "What is TypeScript?" | cat
+perplexity -p "Explain async/await" > answer.txt
+```
+
+Works with both direct queries and interactive mode.
+
 ### Global install
 
 ```bash

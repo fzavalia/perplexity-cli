@@ -207,4 +207,14 @@ describe("runDirectQuery", () => {
     expect(mockCreatePerplexityClient).toHaveBeenCalled();
     expect(mockCreateRenderer).toHaveBeenCalled();
   });
+
+  it("passes plain option to renderer", async () => {
+    await runDirectQuery("test question", { plain: true });
+    expect(mockCreateRenderer).toHaveBeenCalledWith({ plain: true });
+  });
+
+  it("defaults to no plain option when not specified", async () => {
+    await runDirectQuery("test question");
+    expect(mockCreateRenderer).toHaveBeenCalledWith({});
+  });
 });

@@ -5,6 +5,10 @@ import type { SearchResult } from "../api/perplexity.js";
 
 export type IndexedSource = SearchResult & { index: number };
 
+export type RendererOptions = {
+  plain?: boolean;
+};
+
 export type Renderer = {
   assistantToken(token: string): void;
   assistantEnd(): void;
@@ -25,7 +29,35 @@ function colorCitations(text: string): string {
   return text.replace(/\[(\d+)\]/g, (_, n) => chalk.dim(`[${n}]`));
 }
 
-export function createRenderer(): Renderer {
+export function createRenderer(options: RendererOptions = {}): Renderer {
+  const plain = options.plain ?? false;
+
+  if (plain) {
+    return {
+      assistantToken(token: string) {
+        process.stdout.write(token);
+      },
+      assistantEnd() {
+        process.stdout.write("\n");
+      },
+      assistantComplete(content: string) {
+        process.stdout.write(content + "\n");
+      },
+      sources(results: IndexedSource[]) {
+        console.log("");
+        for (const source of results) {
+          console.log(`[${source.index}] ${source.url}`);
+        }
+      },
+      error(message: string) {
+        console.error(message);
+      },
+      info(message: string) {
+        console.log(message);
+      },
+    };
+  }
+
   let isFirstToken = true;
   let buffer = "";
   let lineCount = 0;

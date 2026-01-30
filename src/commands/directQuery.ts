@@ -7,7 +7,14 @@ import { createRenderer } from "../ui/renderer.js";
 import type { Message } from "../types.js";
 import { nanoid } from "nanoid";
 
-export async function runDirectQuery(question: string): Promise<void> {
+export type DirectQueryOptions = {
+  plain?: boolean;
+};
+
+export async function runDirectQuery(
+  question: string,
+  options: DirectQueryOptions = {}
+): Promise<void> {
   const apiKey = process.env["PERPLEXITY_API_KEY"];
 
   if (!apiKey) {
@@ -18,7 +25,7 @@ export async function runDirectQuery(question: string): Promise<void> {
   }
 
   const client = createPerplexityClient(apiKey);
-  const renderer = createRenderer();
+  const renderer = createRenderer({ plain: options.plain });
 
   const userMessage: Message = {
     id: nanoid(),
