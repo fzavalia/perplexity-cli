@@ -166,5 +166,23 @@ describe("createPerplexityClient", () => {
       expect(callArgs.messages[0]).not.toHaveProperty("id");
       expect(callArgs.messages[0]).not.toHaveProperty("createdAt");
     });
+
+    it("passes abort signal to SDK when provided", async () => {
+      mockCreate.mockResolvedValue(asyncIterableFrom([]));
+      const controller = new AbortController();
+      const client = createPerplexityClient("key");
+      await collectEvents(client.streamChat([], { signal: controller.signal }));
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ signal: controller.signal })
+      );
+    });
+
+    it("does not pass signal when not provided", async () => {
+      mockCreate.mockResolvedValue(asyncIterableFrom([]));
+      const client = createPerplexityClient("key");
+      await collectEvents(client.streamChat([]));
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs).not.toHaveProperty("signal");
+    });
   });
 });

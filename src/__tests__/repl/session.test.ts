@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createMockStore, createMockRenderer } from "../helpers.js";
 import type { Conversation } from "../../types.js";
-import type { PerplexityClient, StreamEvent } from "../../api/perplexity.js";
+import type { PerplexityClient, StreamEvent, StreamOptions } from "../../api/perplexity.js";
 
 vi.mock("../../api/perplexity.js", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../api/perplexity.js")>();
@@ -25,7 +25,11 @@ const mockRl = {
 
 const mockStdin = {
   on: vi.fn(),
-  setRawMode: vi.fn(),
+  setRawMode: vi.fn((raw: boolean) => {
+    mockStdin.isRaw = raw;
+  }),
+  removeListener: vi.fn(),
+  resume: vi.fn(),
   isRaw: false,
 };
 
@@ -56,6 +60,11 @@ function simulatePasteEnd(): void {
   handler(undefined, { name: "paste-end" });
 }
 
+function simulateEscapeKey(): void {
+  const handler = getKeypressHandler();
+  handler(undefined, { name: "escape" });
+}
+
 import { classifyApiError } from "../../api/perplexity.js";
 import { startSession } from "../../repl/session.js";
 import clipboard from "clipboardy";
@@ -75,6 +84,39 @@ function createMockClient(events: StreamEvent[] = []): PerplexityClient {
   return {
     async *streamChat() {
       for (const e of events) yield e;
+    },
+  };
+}
+
+function createCancellableClient(
+  events: StreamEvent[],
+  onSignal?: (signal: AbortSignal | undefined) => void
+): PerplexityClient {
+  return {
+    async *streamChat(_messages, options?: StreamOptions) {
+      onSignal?.(options?.signal);
+
+      // Listen for abort signal
+      let aborted = false;
+      options?.signal?.addEventListener("abort", () => {
+        aborted = true;
+      });
+
+      for (const e of events) {
+        if (aborted || options?.signal?.aborted) {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          throw error;
+        }
+        yield e;
+        // Allow time for cancellation between tokens
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (aborted || options?.signal?.aborted) {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          throw error;
+        }
+      }
     },
   };
 }
@@ -804,6 +846,175 @@ describe("startSession", () => {
 
       expect(s.create).not.toHaveBeenCalled();
       expect(mockRl.prompt).toHaveBeenCalled();
+    });
+  });
+
+  describe("Cancel streaming with Escape", () => {
+    it("enables raw mode during streaming", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+      const client = createMockClient([{ type: "token", content: "reply" }]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("hello");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(mockStdin.setRawMode).toHaveBeenCalledWith(true);
+    });
+
+    it("disables raw mode after streaming completes", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+      const client = createMockClient([{ type: "token", content: "reply" }]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("hello");
+      await vi.advanceTimersByTimeAsync(0);
+
+      const setRawModeCalls = mockStdin.setRawMode.mock.calls;
+      expect(setRawModeCalls[setRawModeCalls.length - 1][0]).toBe(false);
+    });
+
+    it("cancels stream and shows cancelled message when Escape is pressed", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+
+      const client = createCancellableClient([
+        { type: "token", content: "Hello" },
+        { type: "token", content: " world" },
+      ]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("hello");
+
+      // Wait for streaming to start
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Simulate Escape key press via the data handler
+      simulateEscapeKey();
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(r.cancelled).toHaveBeenCalled();
+    });
+
+    it("does not save partial response when cancelled", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+
+      const client = createCancellableClient([
+        { type: "token", content: "Hello" },
+        { type: "token", content: " world" },
+      ]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("hello");
+
+      // Wait for streaming to start
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Simulate Escape key press
+      simulateEscapeKey();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Assistant message should NOT be added
+      expect(s.addMessage).not.toHaveBeenCalledWith(
+        conv,
+        "assistant",
+        expect.anything(),
+        expect.anything()
+      );
+    });
+
+    it("removes user message when cancelled to maintain message alternation", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      // Make addMessage actually push to messages array
+      s.addMessage.mockImplementation((c, role, content) => {
+        const msg = { id: "test", role, content, createdAt: new Date().toISOString(), sources: [] };
+        c.messages.push(msg);
+        return msg;
+      });
+      s.create.mockResolvedValue(conv);
+
+      const client = createCancellableClient([
+        { type: "token", content: "Hello" },
+        { type: "token", content: " world" },
+      ]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("hello");
+
+      // Wait for streaming to start - user message is added
+      await vi.advanceTimersByTimeAsync(0);
+      expect(conv.messages).toHaveLength(1);
+      expect(conv.messages[0].role).toBe("user");
+
+      // Simulate Escape key press
+      simulateEscapeKey();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // User message should be removed to maintain alternation
+      expect(conv.messages).toHaveLength(0);
+      // Save should be called again after removal
+      expect(s.save).toHaveBeenLastCalledWith(conv);
+    });
+
+    it("resumes readline after cancellation", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+
+      const client = createCancellableClient([{ type: "token", content: "Hello" }]);
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("hello");
+
+      // Wait for streaming to start
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Simulate Escape key press
+      simulateEscapeKey();
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockRl.resume).toHaveBeenCalled();
+    });
+
+    it("passes abort signal to client streamChat", async () => {
+      const s = store();
+      const r = renderer();
+      const conv = makeConversation();
+      s.create.mockResolvedValue(conv);
+
+      let capturedSignal: AbortSignal | undefined;
+      const client = createCancellableClient(
+        [{ type: "token", content: "reply" }],
+        (signal) => {
+          capturedSignal = signal;
+        }
+      );
+
+      startSession({ client, store: s, renderer: r, conversation: null });
+      const lineHandler = getHandler("line") as LineHandler;
+      lineHandler("hello");
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(capturedSignal).toBeInstanceOf(AbortSignal);
     });
   });
 });

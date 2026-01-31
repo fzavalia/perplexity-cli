@@ -17,13 +17,15 @@ src/
     directQuery.ts   → runDirectQuery(question): one-shot query, streams response, exits
   api/
     perplexity.ts    → createPerplexityClient(apiKey, model?): streamChat async generator via OpenAI SDK
+                       accepts optional AbortSignal for cancellation
                        classifyApiError(): maps errors to user-friendly messages
                        isValidModel(): validates model against VALID_MODELS constant
   store/
     conversation.ts  → createConversationStore(): CRUD for conversation JSON files + index.json
   repl/
     session.ts       → startSession(deps): readline loop, multi-line paste (bracketed paste mode),
-                       slash commands (/help, /list, /resume, /delete, /copy, /clear), deferred conversation creation
+                       slash commands (/help, /list, /resume, /delete, /copy, /clear), deferred conversation creation,
+                       Escape key cancellation (AbortController + raw mode stdin)
   ui/
     renderer.ts      → createRenderer(): streaming token output with markdown rendering
                        (marked + marked-terminal), color support for sources/errors/info
@@ -74,6 +76,7 @@ TypeScript (ES2020, ESM), Node.js >=18, commander, @perplexity-ai/perplexity_ai 
 - Async generators for streaming API responses
 - Deferred conversation creation (conversation starts as `null`, created on first user message)
 - Multi-line paste via bracketed paste mode (terminal signals paste-start/paste-end)
+- Cancellable streams via AbortController (Escape key triggers abort, discards partial response)
 
 ## Conventions
 

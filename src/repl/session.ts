@@ -38,14 +38,18 @@ export function startSession(deps: SessionDeps): Promise<void> {
   // Enable bracketed paste mode
   process.stdout.write(PASTE_BRACKET_START);
 
-  // Track paste state via keypress events
+  // Track paste state and cancel signal via keypress events
   let isPasting = false;
+  let cancelController: AbortController | null = null;
+
   emitKeypressEvents(process.stdin);
-  process.stdin.on("keypress", (_str: string | undefined, key: { name: string }) => {
+  process.stdin.on("keypress", (_str: string | undefined, key: { name: string; sequence?: string }) => {
     if (key?.name === "paste-start") {
       isPasting = true;
     } else if (key?.name === "paste-end") {
       isPasting = false;
+    } else if (key?.name === "escape" && cancelController) {
+      cancelController.abort();
     }
   });
 
@@ -68,17 +72,33 @@ export function startSession(deps: SessionDeps): Promise<void> {
     }
 
     async function sendMessage(content: string): Promise<void> {
+      // Set up cancellation - the keypress handler will call abort() on Escape
+      cancelController = new AbortController();
+      const signal = cancelController.signal;
+      let wasRaw = false;
+
+      // Pause readline and enable raw mode so keypress events fire for Escape
+      rl.pause();
+      if (typeof process.stdin.setRawMode === "function") {
+        wasRaw = process.stdin.isRaw ?? false;
+        process.stdin.setRawMode(true);
+      }
+      process.stdin.resume();
+
       try {
         const conv = await ensureConversation(content);
 
         store.addMessage(conv, "user", content);
         await store.save(conv);
 
-        rl.pause();
         let fullResponse = "";
         let sources: SearchResult[] = [];
 
-        for await (const event of client.streamChat(conv.messages)) {
+        for await (const event of client.streamChat(conv.messages, { signal })) {
+          // Check if user pressed Escape
+          if (signal.aborted) {
+            break;
+          }
           if (event.type === "token") {
             renderer.assistantToken(event.content);
             fullResponse += event.content;
@@ -88,6 +108,15 @@ export function startSession(deps: SessionDeps): Promise<void> {
         }
 
         renderer.assistantEnd();
+
+        // If cancelled, remove the user message to keep conversation consistent
+        if (signal.aborted) {
+          conv.messages.pop();
+          await store.save(conv);
+          renderer.cancelled();
+          return;
+        }
+
         const citedSources = sources
           .map((s, i) => ({ ...s, index: i + 1 }))
           .filter((s) => fullResponse.includes(`[${s.index}]`));
@@ -99,8 +128,21 @@ export function startSession(deps: SessionDeps): Promise<void> {
         await store.save(conv);
       } catch (error) {
         renderer.assistantEnd();
-        renderer.error(classifyApiError(error));
+        if (signal.aborted) {
+          // Remove the user message to keep conversation consistent
+          if (conversation && conversation.messages.length > 0) {
+            conversation.messages.pop();
+            await store.save(conversation);
+          }
+          renderer.cancelled();
+        } else {
+          renderer.error(classifyApiError(error));
+        }
       } finally {
+        cancelController = null;
+        if (typeof process.stdin.setRawMode === "function") {
+          process.stdin.setRawMode(wasRaw);
+        }
         rl.resume();
         showPrompt();
       }

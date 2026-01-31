@@ -61,5 +61,6 @@ export function createMockRenderer(): {
     sources: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    cancelled: vi.fn(),
   };
 }

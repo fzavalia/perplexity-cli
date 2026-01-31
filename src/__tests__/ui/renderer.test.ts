@@ -170,4 +170,20 @@ describe("createRenderer", () => {
       );
     });
   });
+
+  describe("cancelled", () => {
+    it("displays cancelled message", () => {
+      const r = createRenderer();
+      r.cancelled();
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("cancelled")
+      );
+    });
+
+    it("displays plain cancelled message in plain mode", () => {
+      const r = createRenderer({ plain: true });
+      r.cancelled();
+      expect(consoleLogSpy).toHaveBeenCalledWith("(cancelled)");
+    });
+  });
 });

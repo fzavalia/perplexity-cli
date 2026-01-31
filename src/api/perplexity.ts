@@ -22,9 +22,14 @@ export type StreamEvent =
   | { type: "token"; content: string }
   | { type: "sources"; results: SearchResult[] };
 
+export type StreamOptions = {
+  signal?: AbortSignal;
+};
+
 export type PerplexityClient = {
   streamChat(
-    messages: Message[]
+    messages: Message[],
+    options?: StreamOptions
   ): AsyncGenerator<StreamEvent, void, undefined>;
 };
 
@@ -35,7 +40,7 @@ export function createPerplexityClient(
   const client = new Perplexity({ apiKey });
 
   return {
-    async *streamChat(messages) {
+    async *streamChat(messages, options) {
       const stream = await client.chat.completions.create({
         model,
         stream: true,
@@ -43,6 +48,7 @@ export function createPerplexityClient(
           role: m.role,
           content: m.content,
         })),
+        ...(options?.signal ? { signal: options.signal } : {}),
       });
 
       let sourcesSent = false;

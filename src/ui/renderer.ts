@@ -16,6 +16,7 @@ export type Renderer = {
   sources(results: IndexedSource[]): void;
   error(message: string): void;
   info(message: string): void;
+  cancelled(): void;
 };
 
 marked.use(markedTerminal() as Parameters<typeof marked.use>[0]);
@@ -54,6 +55,9 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
       },
       info(message: string) {
         console.log(message);
+      },
+      cancelled() {
+        console.log("(cancelled)");
       },
     };
   }
@@ -123,6 +127,10 @@ export function createRenderer(options: RendererOptions = {}): Renderer {
 
     info(message: string) {
       console.log(chalk.dim(message));
+    },
+
+    cancelled() {
+      console.log(chalk.dim("(cancelled)"));
     },
   };
 }

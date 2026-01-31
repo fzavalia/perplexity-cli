@@ -12,6 +12,7 @@ A terminal interface to Perplexity's chat models with streaming responses, sourc
 - Multi-line paste support (bracketed paste mode)
 - Direct question mode for one-shot queries
 - Model selection via `--model` flag
+- Cancel streaming responses with `Escape` key
 - Slash commands: `/help`, `/list`, `/resume`, `/delete`, `/copy`, `/clear`
 
 ## Requirements
@@ -118,7 +119,7 @@ perplexity
 | `/clear`       | Start a new conversation         |
 | `/exit`        | Exit the application             |
 
-Use `/exit` or `Ctrl+D` to exit.
+Use `/exit` or `Ctrl+D` to exit. Press `Escape` during a response to cancel it.
 
 ## Project structure
 
